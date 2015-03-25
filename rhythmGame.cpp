@@ -28,15 +28,17 @@ const double FRAME_TIME = 1000/FRAMERATE;
 const int numberOfSouls = 3;
 const double soulThreshold = 0; //(this is the maximum height the soul can float to before it's a miss)
 const double dyingBody = 400; //(this is the bottom or starting position of a soul)
-const int soulHeight = 70;
+const double soulHeight = 70;
+const double soulWidth = 80;
 const int maxNotes = 500;
 const int soulDist = dyingBody - soulThreshold; //number of pixels
 const int beatDist = soulDist/4; //distance a soul travels PER BEAT
 //vector where the souls are stored
-SDL_Rect souls[numberOfSouls*maxNotes];
+SDL_Rect souls[numberOfSouls];
 //rectangle for when you should hit the notes
 SDL_Rect hitZone = {0, soulThreshold, windowWidth, soulHeight};
 SDL_Rect feverBar;
+SDL_Rect dyingBodies[numberOfSouls];
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -103,7 +105,7 @@ void initializeSequence()
 //-------------------------------------------------------------------------------------------------------------------------------------
 //TEXTURE DECLARATIONS
 SDL_Texture *soulTex = NULL;
-//SDL_Texture *dyingBodyTex = NULL;
+SDL_Texture *dyingBodyTex = NULL;
 SDL_Texture *soulThresholdTex = NULL;
 SDL_Texture *onBeatTex = NULL;
 SDL_Texture *feverBarTex = NULL;
@@ -196,12 +198,12 @@ bool loadMedia()
         success = false;
     }
 
-	/*dyingBodyTex = loadTexture("pipes.png");
+	dyingBodyTex = loadTexture("pipes.png");
 	if( dyingBodyTex == NULL )
     {
         printf( "Failed to load texture image!\n" );
         success = false;
-    }*/
+    }
 
 	soulThresholdTex = loadTexture("floor.png");
 	if( soulThresholdTex == NULL )
@@ -282,13 +284,24 @@ double playMusic()
 	lastReportedPlayheadPosition = 0;
 	return musicStartTime;
 }
-//------------------------------------INITIALIZE STARTING SOUL POSITIONS---------------------------
+//------------------------------------INITIALIZE STARTING SOUL POSITIONS----------------------------------------
 void initializeSoulPosition(int i, double startingPosition)
 {
 	souls[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
 	souls[i].y = startingPosition;
-	souls[i].w = 50;
+	souls[i].w = soulWidth;
 	souls[i].h = soulHeight;
+}
+//------------------------------------------------------INITIALIZE THE DYING BODIES--------------------------------------------
+void initializeDyingBodies()
+{
+	for (int i = 0; i < numberOfSouls; i++)
+	{
+		dyingBodies[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
+		dyingBodies[i].y = dyingBody;
+		dyingBodies[i].w = soulWidth;
+		dyingBodies[i].h = soulHeight;
+	}
 }
 //-------------------------------------------RENDERING METHOD FOR LOOP------------------------
 void renderSoulFloating(int startingIndex)//, int floatingSouls)
@@ -416,6 +429,7 @@ int main(int argc, char* argv[]) {
 	bool running = true;
 	double songStartTime = playMusic();
 	initializeSequence();
+	initializeDyingBodies();
 	bool scoreRecorded = false;
 	for (int i = 0; i < numberOfSouls; i++)
 	{
@@ -502,6 +516,10 @@ int main(int argc, char* argv[]) {
 		}
 		renderSoulFloating(soulSequence[sequenceID]);
 		comboFever();
+		for (int i = 0; i <numberOfSouls; i++)
+		{
+			SDL_RenderCopy(ren, dyingBodyTex, NULL, &dyingBodies[i]);
+		}
 		if(currentSound->isFinished() == false)
 		{
 			//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
