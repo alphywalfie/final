@@ -36,6 +36,7 @@ const int beatDist = soulDist/4; //distance a soul travels PER BEAT
 SDL_Rect souls[numberOfSouls*maxNotes];
 //rectangle for when you should hit the notes
 SDL_Rect hitZone = {0, soulThreshold, windowWidth, soulHeight};
+SDL_Rect feverBar;
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -56,10 +57,12 @@ double pixelsPerFrame = soulDist/framesPerBeat;
 //VARIABLES FOR SCORING
 int timesMissed = 0;
 int timesHit = 0;
+int combo = 0;
 bool playerStrum1 = false;
 bool playerStrum2 = false;
 bool playerStrum3 = false;
 bool alreadyHit = false;
+bool fever = false;
 
 //DECLARATIONS FOR THE LATENCY TESTS
 SDL_Rect visual_latency_flash; //flashes the screen a different color at a regular interval
@@ -79,8 +82,6 @@ double seedStep = 1232.57129;
 //READING FILES
 string userSettings[10];
 string savedHighScore[3];
-
-//USER GENERATED INPUT
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -105,6 +106,7 @@ SDL_Texture *soulTex = NULL;
 //SDL_Texture *dyingBodyTex = NULL;
 SDL_Texture *soulThresholdTex = NULL;
 SDL_Texture *onBeatTex = NULL;
+SDL_Texture *feverBarTex = NULL;
 //--------------------------------------------------LOAD TEXTURE METHOD-----------------------------------------------------------
 SDL_Texture *loadTexture(string path)
 {
@@ -215,6 +217,13 @@ bool loadMedia()
         success = false;
 	}
 
+	feverBarTex = loadTexture("bg.jpg");
+	if( feverBarTex == NULL )
+	{
+		printf( "Failed to load texture image!\n" );
+        success = false;
+	}
+
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -312,6 +321,7 @@ void scoringCheck(int soulIndex)
 		if(soulIndex == 0&&playerStrum1 == true)
 		{
 			timesHit++;
+			combo++;
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum1 = false;
@@ -319,6 +329,7 @@ void scoringCheck(int soulIndex)
 		else if(soulIndex==1&&playerStrum2==true)
 		{
 			timesHit++;
+			combo++;
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum2 = false;
@@ -326,10 +337,56 @@ void scoringCheck(int soulIndex)
 		else if (soulIndex==2&playerStrum3==true)
 		{
 			timesHit++;
+			combo++;
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum3 = false;
 		}
+}
+//-------------------------------------------------------------------FEVER STATUS-------------------------------------------------------------------
+void comboFever()
+{
+	if (combo >= 20)
+	{
+		feverBar.x = 0;
+		feverBar.y = windowHeight-40;
+		feverBar.w = windowWidth;
+		feverBar.h = 40;
+		fever = true;
+	}
+	else if (combo >= 15)
+	{
+		feverBar.x = 0;
+		feverBar.y = windowHeight-40;
+		feverBar.w = windowWidth*0.75;
+		feverBar.h = 40;
+		fever = false;
+	}
+	else if (combo >= 10)
+	{
+		feverBar.x = 0;
+		feverBar.y = windowHeight-40;
+		feverBar.w = windowWidth*0.5;
+		feverBar.h = 40;
+		fever = false;
+	}
+	else if (combo >= 5)
+	{
+		feverBar.x = 0;
+		feverBar.y = windowHeight-40;
+		feverBar.w = windowWidth*0.25;
+		feverBar.h = 40;
+		fever = false;
+	}
+	else
+	{
+		feverBar.x = 0;
+		feverBar.y = 0;
+		feverBar.w = 0;
+		feverBar.h = 0;
+		fever = false;
+	}
+	SDL_RenderCopy(ren, feverBarTex, NULL, &feverBar);
 }
 //-------------------------------------------MAIN LOOP-----------------------------
 
@@ -408,8 +465,9 @@ int main(int argc, char* argv[]) {
 		//CITE THE SOURCE OF THIS ALGORITHM HERE LATER ON OKAY
 
 		SDL_RenderClear(ren);
-
+		
 		//check if the note is in the "beatZone", and check if a note has already been hit. if it hasn't already been hit, check if the user hit it
+		
 		if(SDL_HasIntersection(&souls[soulSequence[sequenceID]], &hitZone) && !alreadyHit)
 		{
 			scoringCheck(soulSequence[sequenceID]);
@@ -423,23 +481,27 @@ int main(int argc, char* argv[]) {
 			if(playerStrum1 == true)
 			{
 				timesMissed++;
+				combo = 0;
 				cout<<"miss! x"<<timesMissed<<endl;
 				playerStrum1 = false;
 			}
 			if(playerStrum2 == true)
 			{
 				timesMissed++;
+				combo = 0;
 				playerStrum2 = false;
 				cout<<"miss! x"<<timesMissed<<endl;
 			}
 			if(playerStrum3 == true)
 			{
 				timesMissed++;
+				combo = 0;
 				playerStrum3 = false;
 				cout<<"miss! x"<<timesMissed<<endl;
 			}
 		}
 		renderSoulFloating(soulSequence[sequenceID]);
+		comboFever();
 		if(currentSound->isFinished() == false)
 		{
 			//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
@@ -451,16 +513,17 @@ int main(int argc, char* argv[]) {
 			{
 				//sequenceID += soulsAtOnce[soulsAtOnceID];
 				//soulsAtOnceID++;
-				sequenceID++;
 				if(alreadyHit == true)
 				{
 					alreadyHit = false;
 				}
-				else if(sequenceID != 1)
+				else if(sequenceID != 0)
 				{
 					timesMissed++;
+					combo = 0;
 					cout<<"miss! x"<<timesMissed<<endl;
 				}
+				sequenceID++;
 			}
 		}
 		else
@@ -476,7 +539,7 @@ int main(int argc, char* argv[]) {
 					ofstream myfile;
 					myfile.open ("highScore.txt");
 					myfile << "High Score: " << endl;
-					myfile << timesHit; << endl;
+					myfile << timesHit << endl;
 					myfile << "By: " << playerName;
 					myfile.close();
 					scoreRecorded = true;
