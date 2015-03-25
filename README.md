@@ -20,9 +20,9 @@ To include these in your projects:
 
 ##Playing the Game - Controls
 
-Click on souls in the underworld to obliterate them. There are obstacles in place where your mouse cannot pass through.
+Click on souls in the underworld to obliterate them. There are obstacles in place where your mouse cannot pass through and thus you will have to move around them.
 
-Souls will regenerate at a regular rate. Obstacles are in place which you will not be allowed to move your cursor through.
+Souls will regenerate at a regular rate.
 
 Your performance in the rhythm game will affect the rate of soul regeneration in the underworld. Press 1, 2 or 3 for the notes when they reach the top bar. The more times you miss, the faster souls will regenerate in the underworld.
 
