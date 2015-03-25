@@ -9,6 +9,7 @@
 #include <irrklang.h>
 #include <ik_ISound.h>
 #include <string>
+#include <fstream>
 
 const float PI = 3.14159265;
 
@@ -27,9 +28,10 @@ const double FRAME_TIME = 1000/FRAMERATE;
 const int numberOfSouls = 3;
 const double soulThreshold = 0; //(this is the maximum height the soul can float to before it's a miss)
 const double dyingBody = 400; //(this is the bottom or starting position of a soul)
+const int soulHeight = 70;
 const int maxNotes = 500;
 const int soulDist = dyingBody - soulThreshold; //number of pixels
-const int soulHeight = 70;
+const int beatDist = soulDist/4; //distance a soul travels PER BEAT
 //vector where the souls are stored
 SDL_Rect souls[numberOfSouls*maxNotes];
 //rectangle for when you should hit the notes
@@ -38,9 +40,9 @@ SDL_Rect hitZone = {0, soulThreshold, windowWidth, soulHeight};
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
 ISound* currentSound = 0;
-const double bpm = 114.9;//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
-const double crotchet = 60/bpm; //beat duration in seconds
-const string songFilename = "AC-DC - Highway to Hell.mp3";
+double bpm;// = 114.9;//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
+double crotchet;// = 60/bpm; //beat duration in seconds
+string songFilename;// = "AC-DC - Highway to Hell.mp3";
 
 //VARIABLES FOR SYNCING GRAPHICS AND MUSIC
 double songTime; //global variable to use for the beat
@@ -73,6 +75,12 @@ hash<string> str_hash;
 double seed1 = str_hash(songFilename);
 //double seed2 = bpm;
 double seedStep = 1232.57129;
+
+//READING FILES
+string userSettings[10];
+string savedHighScore[2];
+
+//USER GENERATED INPUT
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -239,6 +247,23 @@ void close()
 	IMG_Quit();
     SDL_Quit();
 }
+//-----------------------------------------------------LOAD A FILE-------------------------------------------------------
+void loadFile(char *fileName, string fileContents[])
+{
+	string line;
+	ifstream myfile;
+	myfile.open(fileName);
+	if (myfile.is_open())
+	{
+		int i=0;
+		while ( getline (myfile,line) )
+		{
+			fileContents[i] = line;
+			i++;
+		}
+		myfile.close();
+	}
+}
 //---------------------------------------------BEGIN SONG-------------------------------
 double playMusic()
 {
@@ -320,10 +345,21 @@ int main(int argc, char* argv[]) {
         printf( "Failed to load media!\n" );
 		return 9;
     }
-
+	//************************************************USER GENERATED CONTENT AND HIGH SCORE STORAGE****************************************************
+	loadFile("gameSettings.txt", userSettings);
+	loadFile("highScore.txt", savedHighScore);
+	songFilename = userSettings[3];
+	bpm = stod(userSettings[6]);//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
+	crotchet = 60/bpm; //beat duration in seconds
+	msCrotchet = crotchet*1000; //time duration of a beat in ms
+	framesPerBeat = msCrotchet/FRAME_TIME;
+	pixelsPerFrame = soulDist/framesPerBeat;
+	double highScore = stoi(savedHighScore[1]);
+	//**************************************************************************************************************************************************
 	bool running = true;
-	double previousFrameTime = playMusic();
+	double songStartTime = playMusic();
 	initializeSequence();
+	bool scoreRecorded = false;
 	for (int i = 0; i < numberOfSouls; i++)
 	{
 		initializeSoulPosition(i,dyingBody);
@@ -361,8 +397,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		//keeps track of the songTime, songTime is kept manually until new playhead positions are reported, at which point it eases towards that
-		songTime = SDL_GetTicks() - previousFrameTime;
-		previousFrameTime = SDL_GetTicks();
+		songTime = SDL_GetTicks() - songStartTime;
+		songStartTime = SDL_GetTicks();
 		currentPlayheadPosition = currentSound->getPlayPosition();
 		if(currentPlayheadPosition != lastReportedPlayheadPosition) 
 		{
@@ -403,32 +439,55 @@ int main(int argc, char* argv[]) {
 				cout<<"miss! x"<<timesMissed<<endl;
 			}
 		}
-
-		//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
 		renderSoulFloating(soulSequence[sequenceID]);
+		if(currentSound->isFinished() == false)
+		{
+			//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
 		//!!!!!! also create a way so that the dyingBody texture will change color if they're going to die next??? maybe. idk.
 		//!!!!!! maybe change color of soulThreshold rectangle when hit/miss?
 
 		//once the soul has reinitialized its position, increment the sequenceID. afterwards, check if the note was alreadyHit and reset it to false. if the note wasn't hit, the user missed the note.
-		if(souls[soulSequence[sequenceID]].y == dyingBody && sequenceID < sequenceCount)
-		{
-			//sequenceID += soulsAtOnce[soulsAtOnceID];
-			//soulsAtOnceID++;
-			sequenceID++;
-			if(alreadyHit == true)
+			if(souls[soulSequence[sequenceID]].y == dyingBody && sequenceID < sequenceCount)
 			{
-				alreadyHit = false;
+				//sequenceID += soulsAtOnce[soulsAtOnceID];
+				//soulsAtOnceID++;
+				sequenceID++;
+				if(alreadyHit == true)
+				{
+					alreadyHit = false;
+				}
+				else if(sequenceID != 1)
+				{
+					timesMissed++;
+					cout<<"miss! x"<<timesMissed<<endl;
+				}
 			}
-			else
+		}
+		else
+		{
+			if(scoreRecorded == false)
 			{
-				timesMissed++;
-				cout<<"miss! x"<<timesMissed<<endl;
+				cout << "Your final score: " << timesHit << endl;
+				if(timesHit > highScore)
+				{
+					cout << "Congratulations! High score! Enter your name:";
+					string playerName;
+					cin >> playerName;
+					ofstream myfile;
+					myfile.open ("highScore.txt");
+					myfile << "High Score: " << endl;
+					myfile << timesHit; << endl;
+					myfile << "By: " << playerName;
+					myfile.close();
+					scoreRecorded = true;
+					running = false;
+				}
 			}
 		}
 
 		//draw
 
-		SDL_RenderPresent(ren);
+			SDL_RenderPresent(ren);
 
 		//delay
 		if ((FRAME_TIME - (SDL_GetTicks() - frameTimeStart)) > 0)
