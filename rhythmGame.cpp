@@ -78,7 +78,7 @@ double seedStep = 1232.57129;
 
 //READING FILES
 string userSettings[10];
-string savedHighScore[2];
+string savedHighScore[3];
 
 //USER GENERATED INPUT
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
