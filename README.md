@@ -18,6 +18,8 @@ To include these in your projects:
 
 3) Go to "Linker>>Input" and edit "Additional Dependencies". Add "SDL2_image.lib" and "irrKlang.lib".
 
+All media for this project(pictures and audio files) will need to be in the project folder.
+
 ##Playing the Game - Controls
 
 Click on souls in the underworld to obliterate them. There are obstacles in place where your mouse cannot pass through and thus you will have to move around them.
@@ -27,3 +29,9 @@ Souls will regenerate at a regular rate.
 Your performance in the rhythm game will affect the rate of soul regeneration in the underworld. Press 1, 2 or 3 for the notes when they reach the top bar. The more times you miss, the faster souls will regenerate in the underworld.
 
 To win the game, there needs to be a certain amount of space free in the underworld by the time the song is over.
+
+##Customization
+
+To edit the position of the obstacles, edit ___________________.
+
+To include your own song in the game, put the audio file in the music folder, find the BPM of your song, and edit ________________________
