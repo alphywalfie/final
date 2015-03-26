@@ -20,6 +20,7 @@ using namespace irrklang;
 SDL_Window *win = NULL;
 SDL_Renderer *ren = NULL;
 const int windowWidth = 1000;//1000
+const int viewPortWidth = windowWidth/2;
 const int windowHeight = 600;//600
 const int FRAMERATE = 60;
 const double FRAME_TIME = 1000/FRAMERATE;
@@ -36,7 +37,7 @@ const int beatDist = soulDist/4; //distance a soul travels PER BEAT
 //vector where the souls are stored
 SDL_Rect souls[numberOfSouls];
 //rectangle for when you should hit the notes
-SDL_Rect hitZone = {0, soulThreshold, windowWidth, soulHeight};
+SDL_Rect hitZone = {0, soulThreshold, viewPortWidth, soulHeight};
 SDL_Rect feverBar;
 SDL_Rect dyingBodies[numberOfSouls];
 SDL_Rect lanes[numberOfSouls];
@@ -151,7 +152,7 @@ bool init()
     else
     {
         //Create window
-        win = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_SHOWN );
+        win = SDL_CreateWindow( "Life of the Party", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_SHOWN );
         if( win == NULL )
         {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -313,7 +314,7 @@ double playMusic()
 //------------------------------------INITIALIZE STARTING SOUL POSITIONS----------------------------------------
 void initializeSoulPosition(int i, double startingPosition)
 {
-	souls[i].x = ((i*2+1)*windowWidth)/(numberOfSouls*2)-soulWidth/2;
+	souls[i].x = ((i*2+1)*viewPortWidth)/(numberOfSouls*2)-soulWidth/2;
 	souls[i].y = startingPosition;
 	souls[i].w = soulWidth;
 	souls[i].h = soulHeight;
@@ -323,8 +324,7 @@ void initializeDyingBodies()
 {
 	for (int i = 0; i < numberOfSouls; i++)
 	{
-		//dyingBodies[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
-		dyingBodies[i].x = ((1+i*2)*windowWidth)/(numberOfSouls*2)-(soulWidth/2);
+		dyingBodies[i].x = ((1+i*2)*viewPortWidth)/(numberOfSouls*2)-(soulWidth/2);
 		dyingBodies[i].y = dyingBody;
 		dyingBodies[i].w = soulWidth;
 		dyingBodies[i].h = soulHeight;
@@ -335,9 +335,9 @@ void initializeLanes()
 {
 	for (int i = 0; i < numberOfSouls; i++)
 	{
-		lanes[i].x = i*(windowWidth/numberOfSouls);
+		lanes[i].x = i*(viewPortWidth/numberOfSouls);
 		lanes[i].y = soulThreshold + soulHeight;
-		lanes[i].w = windowWidth/3;
+		lanes[i].w = viewPortWidth/3;
 		lanes[i].h = windowHeight - soulHeight;
 	}
 }
