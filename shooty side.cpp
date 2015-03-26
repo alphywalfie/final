@@ -45,6 +45,9 @@ SDL_Texture *soulTex = NULL;
 SDL_Texture *bgTex = NULL;
 SDL_Texture *groundTex = NULL;
 SDL_Texture *gunLockTex = NULL;
+SDL_Texture *gunHeatTex = NULL;
+SDL_Texture *gunOverheatTex = NULL;
+SDL_Texture *gunHeatFrameTex = NULL;
 
 
 SDL_Texture *loadTexture(string path)
@@ -156,6 +159,27 @@ bool loadMedia()
         success = false;
     }
 
+	gunHeatTex = loadTexture("green.jpg");
+	if( gunLockTex == NULL )
+    {
+        printf( "Failed to load texture image!\n" );
+        success = false;
+    }
+
+	gunOverheatTex = loadTexture("red.jpg");
+	if( gunLockTex == NULL )
+    {
+        printf( "Failed to load texture image!\n" );
+        success = false;
+    }
+
+	gunHeatFrameTex = loadTexture("pipes.png");
+	if( gunLockTex == NULL )
+    {
+        printf( "Failed to load texture image!\n" );
+        success = false;
+    }
+
     return success;
 }
 
@@ -222,6 +246,7 @@ Uint32 getpixel(SDL_Surface *surface, int x, int y)
     }
 }
 
+//https://wiki.libsdl.org/SDL_GetRGB
 bool readCustomLevel() {
 	bool success = true;
 	for (int i = 0; i < 100; i++)
@@ -458,6 +483,18 @@ int main(int argc, char* argv[]) {
 		rightSide.w = windowWidth/2;
 		rightSide.h = windowHeight;
 		SDL_RenderSetViewport(ren, &rightSide);
+
+	SDL_Rect gunHeatBar;
+		gunHeatBar.x = (windowWidth/2) - (wallThickness*2/3);
+		gunHeatBar.y =  windowHeight-wallThickness/2;
+		gunHeatBar.w = wallThickness/3;
+		gunHeatBar.h = windowHeight/4;
+	SDL_Rect gunHeatBarFill;
+		gunHeatBarFill.x = gunHeatBar.x;
+		gunHeatBarFill.y = gunHeatBar.y;
+		gunHeatBarFill.w = gunHeatBar.w;
+		gunHeatBarFill.h = gunHeatBar.h * (gunHeat/(double)5);
+	SDL_Point turningPoint = {gunHeatBar.w/2,0};
 	
 	while (running)	
 	{
@@ -693,6 +730,7 @@ int main(int argc, char* argv[]) {
 		//draw
 		SDL_RenderClear(ren);
 
+
 		
 		//SDL_RenderCopyEx(ren, soulTex, NULL, &target, frame, NULL, SDL_FLIP_NONE);
 
@@ -727,6 +765,17 @@ int main(int argc, char* argv[]) {
 			SDL_RenderCopyEx(ren, gunLockTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
 		}
 		//cout <<"x" << mousePos.x << endl;
+
+		gunHeatBarFill.h = gunHeatBar.h * (gunHeat/(double)5);
+		SDL_RenderCopyEx(ren, gunHeatFrameTex, NULL, &gunHeatBar, 180, &turningPoint, SDL_FLIP_VERTICAL);
+		if (!gunLock)
+		{
+			SDL_RenderCopyEx(ren, gunHeatTex, NULL, &gunHeatBarFill, 180, &turningPoint, SDL_FLIP_VERTICAL);
+		}
+		else
+		{
+			SDL_RenderCopyEx(ren, gunOverheatTex, NULL, &gunHeatBarFill, 180, &turningPoint, SDL_FLIP_VERTICAL);
+		}
 
 		SDL_RenderPresent(ren);		
 
