@@ -211,7 +211,7 @@ bool init()
     return initSuccess;
 }
 //---------------------------------------------------RENDER ANY TEXT----------------------------------------------------------------------
-SDL_Texture *renderText(string textToRender)
+SDL_Texture *renderTEXTure(string textToRender)
 {
 	SDL_Surface *renderedTextSurface = NULL;
 	SDL_Texture *renderedTextTexture = NULL;
@@ -296,7 +296,7 @@ bool loadMedia()
 		success=false;
 	}
 
-	hitTex = renderText("Great!");
+	hitTex = renderTEXTure("Great!");
 	if(hitTex ==NULL)
 	{
 		printf("Failed to load hitTex!\n");
