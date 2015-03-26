@@ -198,6 +198,18 @@ void close()
 	SDL_DestroyTexture(groundTex);
 	groundTex = NULL;
 
+	SDL_DestroyTexture(gunLockTex);
+	gunLockTex = NULL;
+
+	SDL_DestroyTexture(gunHeatTex);
+	gunHeatTex = NULL;
+
+	SDL_DestroyTexture(gunOverheatTex);
+	gunOverheatTex = NULL;
+
+	SDL_DestroyTexture(gunHeatFrameTex);
+	gunHeatFrameTex = NULL;
+
 	//Destroy Renderer
 	SDL_DestroyRenderer(ren);
 	ren = NULL;
@@ -284,7 +296,7 @@ void initObstacles(int levelChoice)
 {
 	obstacles.clear();
 	switch (levelChoice) {
-	case 0:
+	case 1:
 		for (int i = 0; i < 100; i++)
 		{
 			if (highwayLayout[i] != 0)
@@ -294,7 +306,7 @@ void initObstacles(int levelChoice)
 			}
 		}
 		break;
-	case 1:
+	case 2:
 		for (int i = 0; i < 100; i++)
 		{
 			if (livingLayout[i] != 0)
@@ -304,7 +316,7 @@ void initObstacles(int levelChoice)
 			}
 		}
 		break;
-	case 2:
+	case 3:
 		for (int i = 0; i < 100; i++)
 		{
 			if (killLayout[i] != 0)
