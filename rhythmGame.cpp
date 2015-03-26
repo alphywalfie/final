@@ -62,6 +62,8 @@ double pixelsPerFrame = soulDist/framesPerBeat;
 int timesMissed = 0;
 int timesHit = 0;
 int combo = 0;
+int highestPlayerCombo = 0;
+int playerScore;
 bool playerStrum1 = false;
 bool playerStrum2 = false;
 bool playerStrum3 = false;
@@ -83,7 +85,7 @@ double seedStep = 1232.57129;
 
 //READING FILES
 string userSettings[10];
-string savedHighScore[3];
+string savedHighScore[10];
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -438,6 +440,10 @@ void comboFever()
 		fever = false;
 	}
 	SDL_RenderCopy(ren, feverBarTex, NULL, &feverBar);
+	if (combo > highestPlayerCombo)
+	{
+		highestPlayerCombo = combo;
+	}
 }
 //-------------------------------------------MAIN LOOP-----------------------------
 
@@ -463,6 +469,9 @@ int main(int argc, char* argv[]) {
 	framesPerBeat = msCrotchet/FRAME_TIME;
 	pixelsPerFrame = soulDist/framesPerBeat;
 	double highScore = stoi(savedHighScore[1]);
+	double highestComboScore = stoi(savedHighScore[6]);
+	string playerNameScore = savedHighScore[3];
+	string playerNameCombo = savedHighScore[8];
 	//**************************************************************************************************************************************************
 	bool running = true;
 	double songStartTime = playMusic();
@@ -568,15 +577,9 @@ int main(int argc, char* argv[]) {
 		comboFever();
 		if(currentSound->isFinished() == false)
 		{
-			//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
-		//!!!!!! also create a way so that the dyingBody texture will change color if they're going to die next??? maybe. idk.
-		//!!!!!! maybe change color of soulThreshold rectangle when hit/miss?
-
 		//once the soul has reinitialized its position, increment the sequenceID. afterwards, check if the note was alreadyHit and reset it to false. if the note wasn't hit, the user missed the note.
 			if(souls[soulSequence[sequenceID]].y == dyingBody && sequenceID < sequenceCount)
 			{
-				//sequenceID += soulsAtOnce[soulsAtOnceID];
-				//soulsAtOnceID++;
 				if(alreadyHit == true)
 				{
 					alreadyHit = false;
@@ -597,18 +600,30 @@ int main(int argc, char* argv[]) {
 				cout << "Your final score: " << timesHit << endl;
 				if(timesHit > highScore)
 				{
+					highScore = timesHit;
 					cout << "Congratulations! High score! Enter your name:";
-					string playerName;
-					cin >> playerName;
-					ofstream myfile;
-					myfile.open ("highScore.txt");
-					myfile << "High Score: " << endl;
-					myfile << timesHit << endl;
-					myfile << "By: " << playerName;
-					myfile.close();
-					scoreRecorded = true;
-					running = false;
+					cin >> playerNameScore;
 				}
+				if(highestPlayerCombo > highestComboScore)
+				{
+					highestComboScore = highestPlayerCombo;
+					cout << "Congratulations! Longest Streak! Enter your name:";
+					cin >> playerNameCombo;
+				}
+				ofstream myfile;
+				myfile.open ("highScore.txt");
+				myfile << "High Score: " << endl;
+				myfile << highScore << endl;
+				myfile << "By: " << endl;
+				myfile << playerNameScore << endl;
+				myfile << " " << endl;
+				myfile << "Longest Combo: " << endl;
+				myfile << highestComboScore << endl;
+				myfile << "By: " << endl;
+				myfile << playerNameCombo << endl;
+				myfile.close();
+				scoreRecorded = true;
+				running = false;
 			}
 		}
 
