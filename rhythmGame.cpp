@@ -49,6 +49,7 @@ SDL_Rect dyingBodies[numberOfSouls];
 SDL_Rect lanes[numberOfSouls];
 SDL_Rect startScreenRect = {0, 0, windowWidth, windowHeight};
 SDL_Rect notifiers[numberOfSouls];
+SDL_Rect buttonPress[numberOfSouls];
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -138,6 +139,7 @@ SDL_Texture *laneTex = NULL;
 SDL_Texture *currentLaneTex = NULL;
 SDL_Texture *startScreenTex = NULL;
 SDL_Texture *missTex = NULL;
+SDL_Texture *buttonPressTex = NULL;
 //--------------------------------------------------LOAD TEXTURE METHOD-----------------------------------------------------------
 SDL_Texture *loadTexture(string path)
 {
@@ -313,6 +315,12 @@ bool loadMedia()
 		printf("Failed to render missTex!\n");
 		success=false;
 	}
+
+	buttonPressTex = loadTexture("pipes.png");
+	if (buttonPressTex == NULL)
+	{
+		printf("Failed to load buttonTex!\n");
+	}
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -448,6 +456,33 @@ void initializeNotifiers()
 		notifiers[i].y = soulThreshold+soulNoteHeight;
 		notifiers[i].w = soulNoteWidth;
 		notifiers[i].h = soulNoteHeight;
+	}
+}
+//---------------------------------------------------------INITIALIZE BUTTON PRESS RECTANGLES----------------------------------------------
+void initializeButtonPress()
+{
+	for (int i = 0; i < numberOfSouls; i++)
+	{
+		buttonPress[i].x = i*(viewPortWidth/numberOfSouls);
+		buttonPress[i].y = soulThreshold;
+		buttonPress[i].w = viewPortWidth/3;
+		buttonPress[i].h = soulNoteHeight;
+	}
+}
+//----------------------------------------------------------RENDER BUTTON PRESS-----------------------------------------------------------
+void checkAndRenderButtonPress()
+{
+	if (playerStrum1 == true)
+	{
+		SDL_RenderCopy(ren, buttonPressTex, NULL, &buttonPress[0]);
+	}
+	if (playerStrum2 == true)
+	{
+		SDL_RenderCopy(ren, buttonPressTex, NULL, &buttonPress[1]);
+	}
+	if (playerStrum3 == true)
+	{
+		SDL_RenderCopy(ren, buttonPressTex, NULL, &buttonPress[2]);
 	}
 }
 //-------------------------------------------RENDERING METHOD FOR LOOP------------------------
@@ -627,6 +662,7 @@ void playGame()
 	initializeDyingBodies();
 	initializeLanes();
 	initializeNotifiers();
+	initializeButtonPress();
 	bool scoreRecorded = false;
 	for (int i = 0; i < numberOfSouls; i++)
 	{
@@ -691,6 +727,8 @@ void playGame()
 		}
 		renderScoreBoard();
 		SDL_RenderCopy(ren, textTex, NULL, &scoreBoard);
+		SDL_RenderCopy(ren, soulThresholdTex, NULL, &hitZone);
+		checkAndRenderButtonPress();
 		//check if the note is in the "beatZone", and check if a note has already been hit. if it hasn't already been hit, check if the user hit it
 		if(SDL_HasIntersection(&soulNotes[soulSequence[sequenceID]], &hitZone) && !alreadyHit)
 		{
@@ -700,7 +738,7 @@ void playGame()
 		else
 		{
 			//if the note is NOT in the beatZone or if the note has already been hit but the user presses the button again, return a miss
-			SDL_RenderCopy(ren, soulThresholdTex, NULL, &hitZone);
+			//
 			if(playerStrum1 == true)
 			{
 				timesMissed++;
