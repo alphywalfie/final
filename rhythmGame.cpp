@@ -30,7 +30,7 @@ bool running = false;
 
 //CONSTANTS FOR THE GAME'S GRAPHICS
 const int numberOfSouls = 3;
-const double soulThreshold = 0; //(this is the maximum height the soul can float to before it's a miss)
+const double soulThreshold = 40; //(this is the maximum height the soul can float to before it's a miss)
 const double dyingBody = 400; //(this is the bottom or starting position of a soul)
 const double soulNoteHeight = 70;
 const double soulNoteWidth = 80;
@@ -40,7 +40,6 @@ const double scoreBoardHeight = 50;
 const double feverBarWidth = viewPortWidth - scoreBoardWidth;
 const int maxNotes = 500;
 const int soulDist = dyingBody - soulThreshold; //number of pixels
-const int beatDist = soulDist/4; //distance a soul travels PER BEAT
 //vector where the souls are stored
 SDL_Rect soulNotes[numberOfSouls];
 //rectangle for when you should hit the notes
@@ -412,7 +411,7 @@ void renderSoulFloating(int startingIndex)//, int floatingSouls)
 	}*/
 
 	//souls[startingIndex].y -= soulThreshold + (songTime/(FRAME_TIME*sequenceCount*soulDist) + pixelsPerFrame); //sync equation version 1
-	soulNotes[startingIndex].y -= soulThreshold + (songTime/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 2
+	soulNotes[startingIndex].y -= (songTime/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 2
 	//souls[startingIndex].y -= soulThreshold + (currentPlayheadPosition/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 3
 	if (soulNotes[startingIndex].y + soulNotes[startingIndex].h <= soulThreshold)
 	{
