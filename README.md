@@ -38,4 +38,4 @@ To win the game, there needs to be a certain amount of space free in the underwo
 
 To edit the position of the obstacles, edit ___________________.
 
-To include your own song in the game, put the audio file in the music folder, find the BPM of your song, and edit "gameSettings.txt" Be sure not to change the line spacings.
+To include your own song in the game, put the audio file in the project folder, find the BPM of your song, and edit "gameSettings.txt" Be sure not to change the line spacings.
