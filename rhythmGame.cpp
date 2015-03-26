@@ -50,6 +50,7 @@ ISound* currentSound = 0;
 double bpm;// = 114.9;//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
 double crotchet;// = 60/bpm; //beat duration in seconds
 string songFilename;// = "AC-DC - Highway to Hell.mp3";
+int playerSelectedSong;
 
 //VARIABLES FOR SYNCING GRAPHICS AND MUSIC
 double songTime; //global variable to use for the beat
@@ -476,14 +477,39 @@ void setDifficulty(string diffSetting)
 		minimumFever = 80;
 	}
 }
+//------------------------------------------------------------------SONG SELECT----------------------------------------------------------------------------
+void songSelect(int selectedOption)
+{
+	if(selectedOption == 1)
+	{
+		songFilename="AC-DC - Highway to Hell.mp3";
+		bpm = 114.9;
+	}
+	else if(selectedOption == 2)
+	{
+		songFilename="Bon Jovi - Living on a Prayer.mp3";
+		bpm = 121.37;
+	}
+	else if(selectedOption == 3)
+	{
+		songFilename="03 30 Seconds To Mars - The Kill.mp3";
+		bpm = 104.63;
+	}
+	else if(selectedOption == 4)
+	{
+		songFilename=userSettings[3];
+		bpm = stod(userSettings[6]);
+	}
+}
 //-------------------------------------------MAIN LOOP-----------------------------
 void playGame()
 {
-	//************************************************USER SETTINGS AND HIGH SCORE STORAGE************************************************************
+	//************************************************USER INPUT AND HIGH SCORE STORAGE************************************************************
 	loadFile("gameSettings.txt", userSettings);
 	loadFile("highScore.txt", savedHighScore);
-	songFilename = userSettings[3];
-	bpm = stod(userSettings[6]);//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
+	songSelect(playerSelectedSong);
+	//songFilename = userSettings[3];
+	//bpm = stod(userSettings[6]);//121.37 Livin on a Prayer //114.9 Highway to Hell //104.63 The Kill
 	crotchet = 60/bpm; //beat duration in seconds
 	msCrotchet = crotchet*1000; //time duration of a beat in ms
 	framesPerBeat = msCrotchet/FRAME_TIME;
@@ -686,6 +712,22 @@ int main(int argc, char* argv[])
 			}
 			else if (ev.type == SDL_KEYDOWN)
 			{
+				if (ev.key.keysym.sym == SDLK_1)
+				{
+					playerSelectedSong = 1;
+				}
+				if (ev.key.keysym.sym == SDLK_2)
+				{
+					playerSelectedSong = 2;
+				}
+				if (ev.key.keysym.sym == SDLK_3)
+				{
+					playerSelectedSong = 3;
+				}
+				if (ev.key.keysym.sym == SDLK_4)
+				{
+					playerSelectedSong = 4;
+				}
 				if (ev.key.keysym.sym == SDLK_SPACE)
 				{
 					beginGame = true;
