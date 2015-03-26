@@ -25,6 +25,7 @@ int activeSouls = 50;
 int soulHeight = 30; //30
 int soulWidth = 15;
 double soulSpeed = 1.00;
+double soulSpawnRate = 0.5;
 
 struct Soul {double x, y, w, h;  float vx, vy;};
 
@@ -40,6 +41,8 @@ SDL_Texture *crosshairTex = NULL;
 SDL_Texture *soulTex = NULL;
 SDL_Texture *bgTex = NULL;
 SDL_Texture *groundTex = NULL;
+SDL_Texture *gunLockTex = NULL;
+
 
 SDL_Texture *loadTexture(string path)
 {
@@ -138,6 +141,13 @@ bool loadMedia()
 
 	groundTex = loadTexture("ROCKS.bmp"); //floor.png
 	if( groundTex == NULL )
+    {
+        printf( "Failed to load texture image!\n" );
+        success = false;
+    }
+
+	gunLockTex = loadTexture("damShip.bmp");
+	if( gunLockTex == NULL )
     {
         printf( "Failed to load texture image!\n" );
         success = false;
@@ -321,6 +331,13 @@ int main(int argc, char* argv[]) {
 	walls[3].y = 0;
 	walls[3].w = blockWidth;
 	walls[3].h = windowHeight;
+
+	SDL_Rect rightSide;
+		rightSide.x = windowWidth/2;
+		rightSide.y = 0;
+		rightSide.w = windowWidth/2;
+		rightSide.h = windowHeight;
+		SDL_RenderSetViewport(ren, &rightSide);
 	
 	while (running)	
 	{
@@ -473,8 +490,11 @@ int main(int argc, char* argv[]) {
 		}
 		cursorCollidedX = false, cursorCollidedY = false;
 
-
-		souls.push_back(spawnNewSoul());
+		if(frame % (FRAMERATE/4) == 0 && souls.size() < maxSouls && fRand() < soulSpawnRate)
+		{
+			souls.push_back(spawnNewSoul());
+			cout << souls.size() << endl;
+		}
 
 		//SOUL BLOCK
 		//int newTime = SDL_GetTicks();
@@ -550,13 +570,6 @@ int main(int argc, char* argv[]) {
 		}
 
 		//draw
-		SDL_Rect rightSide;
-		rightSide.x = windowWidth/2;
-		rightSide.y = 0;
-		rightSide.w = windowWidth/2;
-		rightSide.h = windowHeight;
-		SDL_RenderSetViewport(ren, &rightSide);
-
 		SDL_RenderClear(ren);
 
 		
@@ -584,7 +597,14 @@ int main(int argc, char* argv[]) {
 
 	
 		//cursor
-		SDL_RenderCopyEx(ren, crosshairTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
+		if (!gunLock)
+		{
+			SDL_RenderCopyEx(ren, crosshairTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
+		}
+		else
+		{
+			SDL_RenderCopyEx(ren, gunLockTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
+		}
 		//cout <<"x" << mousePos.x << endl;
 
 		SDL_RenderPresent(ren);		
