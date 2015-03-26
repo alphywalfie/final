@@ -30,7 +30,7 @@ bool running = false;
 
 //CONSTANTS FOR THE GAME'S GRAPHICS
 const int numberOfSouls = 3;
-const double soulThreshold = 40; //(this is the maximum height the soul can float to before it's a miss)
+const double soulThreshold = 0; //(this is the maximum height the soul can float to before it's a miss)
 const double dyingBody = 400; //(this is the bottom or starting position of a soul)
 const double soulNoteHeight = 70;
 const double soulNoteWidth = 80;
@@ -79,6 +79,7 @@ bool playerStrum3 = false;
 bool alreadyHit = false;
 bool fever = false;
 SDL_Rect scoreBoard = {viewPortWidth-70, windowHeight -50, 40, 50};
+SDL_Rect greatTextPopup = {80, 70, soulNoteWidth, soulNoteHeight};
 
 //DECLARATIONS FOR THE LATENCY TESTS
 SDL_Rect visual_latency_flash; //flashes the screen a different color at a regular interval
@@ -102,6 +103,7 @@ TTF_Font *font;
 SDL_Color color={0,0,0};
 SDL_Surface *text_surface;
 SDL_Texture *textTex;
+SDL_Texture *hitTex = NULL;
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -208,6 +210,17 @@ bool init()
 
     return initSuccess;
 }
+//---------------------------------------------------RENDER ANY TEXT----------------------------------------------------------------------
+SDL_Texture *renderText(string textToRender)
+{
+	SDL_Surface *renderedTextSurface = NULL;
+	SDL_Texture *renderedTextTexture = NULL;
+	renderedTextSurface = TTF_RenderText_Solid(font, textToRender.c_str() ,color);
+
+	renderedTextTexture = SDL_CreateTextureFromSurface( ren, renderedTextSurface );
+	SDL_FreeSurface( text_surface );
+	return renderedTextTexture;
+}
 //-----------------------------------------------------------LOAD MEDIA------------------------------------------------------
 bool loadMedia()
 {
@@ -280,6 +293,13 @@ bool loadMedia()
 	if( font == NULL ) 
 	{
 		printf("Failed to load font!\n");
+		success=false;
+	}
+
+	hitTex = renderText("Great!");
+	if(hitTex ==NULL)
+	{
+		printf("Failed to load hitTex!\n");
 		success=false;
 	}
 
@@ -429,6 +449,7 @@ void scoringCheck(int soulIndex)
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum1 = false;
+			SDL_RenderCopy(ren, hitTex, NULL, &greatTextPopup);
 		}
 		else if(soulIndex==1&&playerStrum2==true)
 		{
@@ -630,7 +651,6 @@ void playGame()
 		{
 			scoringCheck(soulSequence[sequenceID]);
 			SDL_RenderCopy(ren, onBeatTex, NULL, &hitZone);
-			//find a way to track combos or maybe a fever bar <3
 		}
 		else
 		{
@@ -658,10 +678,10 @@ void playGame()
 				cout<<"miss! x"<<timesMissed<<endl;
 			}
 		}
-		renderSoulFloating(soulSequence[sequenceID]);
 		comboFever();
 		if(currentSound->isFinished() == false)
 		{
+			renderSoulFloating(soulSequence[sequenceID]);
 		//once the soul has reinitialized its position, increment the sequenceID. afterwards, check if the note was alreadyHit and reset it to false. if the note wasn't hit, the user missed the note.
 			if(soulNotes[soulSequence[sequenceID]].y == dyingBody && sequenceID < sequenceCount)
 			{
@@ -708,9 +728,8 @@ void playGame()
 				myfile << playerNameCombo << endl;
 				myfile.close();
 				scoreRecorded = true;
-				running = false;
+				bool beginGame = false;
 			}
-			cin;
 		}
 
 		//draw
@@ -780,11 +799,12 @@ int main(int argc, char* argv[])
 			SDL_RenderCopy(ren, startScreenTex, NULL, &startScreenRect);
 			SDL_RenderPresent(ren);
 		}
+		if(beginGame)
+		{
+			playGame();
+		}
 	}
-	if(beginGame)
-	{
-		playGame();
-	}
+	
 	close();
 	return 0;
 }
