@@ -8,6 +8,8 @@ This game is split-screen and requires multi-tasking. On the left side of the sc
 
 ##Building the Game
 
+###Additional Libraries
+
 This project requires two libraries aside from SDL, SDL_image and irrKlang. 
 
 To include these in your projects:
@@ -18,7 +20,9 @@ To include these in your projects:
 
 3) Go to "Linker>>Input" and edit "Additional Dependencies". Add "SDL2_image.lib" and "irrKlang.lib".
 
-All media for this project(pictures and audio files) will need to be in the project folder.
+###Game Media and File Dependencies
+
+Make sure to include all the files found in "media" and "text files and dependencies" in your project folder. (The folder in your solution where the "".vcxproj" file is located)
 
 ##Playing the Game - Controls
 
