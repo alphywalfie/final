@@ -9,13 +9,13 @@
 const float PI = 3.14159265;
 using namespace std;
 #include "boxCircleCollision.hpp"
-#include "custom lvl.hpp"
+#include "custom lvl.txt"
 
-const int windowWidth = 600;
 const int windowHeight = 600;
+const int windowWidth = windowHeight*2;
 const int FRAMERATE = 60;
 const double FRAME_TIME = 1000/FRAMERATE;
-const int blockWidth = windowWidth/12;
+const int blockWidth = (windowWidth/2)/12;
 const int blockHeight = blockWidth;
 
 int cursorRadius = 15;
@@ -79,7 +79,7 @@ bool init()
     else
     {
         //Create window
-        win = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_SHOWN );
+        win = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (windowWidth), windowHeight, SDL_WINDOW_SHOWN );
         if( win == NULL )
         {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -199,7 +199,7 @@ void initSouls() // MUST RUN AFTER OBSTACLE INIT
 		bool soulPosOk = false;
 		while (!soulPosOk)
 		{
-			souls[i].x = (fRand() * windowWidth-blockWidth*2) + blockWidth;
+			souls[i].x = (fRand() * (windowWidth/2)-blockWidth*2) + blockWidth;
 			souls[i].y = (fRand() * windowHeight-blockHeight*2) + blockHeight;
 			souls[i].w = soulWidth;
 			souls[i].h = soulHeight;
@@ -223,6 +223,37 @@ void initSouls() // MUST RUN AFTER OBSTACLE INIT
 			}
 		}
 	}
+}
+
+Soul spawnNewSoul() {
+	bool soulPosOk = false;
+	Soul soul;
+	while (!soulPosOk)
+	{
+		soul.x = (fRand() * (windowWidth/2)-blockWidth*2) + blockWidth;
+		soul.y = (fRand() * windowHeight-blockHeight*2) + blockHeight;
+		soul.w = soulWidth;
+		soul.h = soulHeight;
+		float theta = fRand()*2*PI;
+		soul.vx = cos(theta)*soulSpeed;
+		soul.vy = sin(theta)*soulSpeed;
+
+		SDL_Rect soulTestRect = {soul.x, soul.y, soul.w, soul.h};
+		bool problematicSoul = false; 
+		for (int j = 0; j < obstacles.size(); j++)
+		{
+			if (SDL_HasIntersection(&soulTestRect, &obstacles[j]) == SDL_TRUE)
+			{
+				cout << "PROBLEMATIC SOUL INDEX: "<< "new spawn " << obstacles.size() << endl;
+				problematicSoul = true;
+			}
+		}
+		if (!problematicSoul)
+		{
+			soulPosOk = true;
+		}
+	}
+	return soul;
 }
 
 
@@ -258,16 +289,22 @@ int main(int argc, char* argv[]) {
 	int mouseMotionX = 0, mouseMotionY = 0;
 	//int newMouseX = 0, newMouseY = 0;
 	//SDL_GetMouseState(&mouseMotionX, &mouseMotionY);
-	SDL_Rect mousePos = {windowWidth/2, windowHeight/2, cursorRadius*2, cursorRadius*2};
+	SDL_Rect mousePos = {(windowWidth/2)/2, windowHeight/2, cursorRadius*2, cursorRadius*2};
 	bool cursorCollidedX = false;
 	bool cursorCollidedY = false;
+
 	bool firingBullets = false;
+	bool mouseButtonDown = false;
+	double gunHeat = 0.0;
+	bool gunLock = false;
+	int bulletDelay = FRAMERATE / 5;
+
 	int killCount = 0;
 
 	SDL_Rect walls[4];
 	walls[0].x = 0;
 	walls[0].y = 0;
-	walls[0].w = windowWidth;
+	walls[0].w = (windowWidth/2);
 	walls[0].h = blockHeight;
 	
 	walls[1].x = 0;
@@ -277,10 +314,10 @@ int main(int argc, char* argv[]) {
 
 	walls[2].x = 0;
 	walls[2].y = windowHeight-blockHeight;
-	walls[2].w = windowWidth;
+	walls[2].w = (windowWidth/2);
 	walls[2].h = blockHeight;
 	
-	walls[3].x = windowWidth-blockWidth;
+	walls[3].x = (windowWidth/2)-blockWidth;
 	walls[3].y = 0;
 	walls[3].w = blockWidth;
 	walls[3].h = windowHeight;
@@ -309,16 +346,18 @@ int main(int argc, char* argv[]) {
 			}
 			else if (ev.type == SDL_MOUSEMOTION)
 			{
-				mouseMotionX = ev.motion.xrel*1.5;
-				mouseMotionY = ev.motion.yrel*1.5;
+				mouseMotionX = ev.motion.xrel*2;
+				mouseMotionY = ev.motion.yrel*2;
 			}
 			else if(ev.type == SDL_MOUSEBUTTONDOWN)
 			{
-				firingBullets = true;
+				mouseButtonDown = true;
+				//firingBullets = true;
 			}
 			else if (ev.type == SDL_MOUSEBUTTONUP)
 			{
-				firingBullets = false;
+				mouseButtonDown = false;
+				//firingBullets = false;
 			}
 		}
 
@@ -329,15 +368,58 @@ int main(int argc, char* argv[]) {
 			cout << SDL_GetTicks() << endl;
 		}*/
 
+		//if gun can shoot
+		if (mouseButtonDown && bulletDelay == 0 && !gunLock)
+		{
+			firingBullets = true;
+			bulletDelay = FRAMERATE/5;
+			gunHeat += 0.25;
+			cout << gunHeat << endl;
+		}
+		else if (bulletDelay > 0)
+		{
+			firingBullets = false;
+			bulletDelay--;
+		}
+		
+		//cool down gun
+		if ((gunHeat > 0 && bulletDelay == 0))
+		{
+			if (gunLock)
+			{
+				gunHeat -= 0.025;
+				cout << gunHeat << endl;
+			}
+			else
+			{
+				gunHeat -= 0.05;
+				cout << gunHeat << endl;
+			}
+			
+		}
+
+		//lock gun
+		if (gunHeat >= 5)
+		{
+			gunLock = true;
+		}
+		else if (gunHeat <= 0.25)
+		{
+			gunLock = false;
+		}
+
+
+
+
 		//MOUSE BLOCK
 		/*if (newMouseX < blockWidth)
 		{
 			mousePos.x = blockWidth;
 			cout << mousePos.x << endl;
 		}
-		else if (newMouseX > windowWidth-blockWidth-cursorRadius*2)
+		else if (newMouseX > (windowWidth/2)-blockWidth-cursorRadius*2)
 		{
-			mousePos.x = windowWidth-blockWidth-cursorRadius*2;
+			mousePos.x = (windowWidth/2)-blockWidth-cursorRadius*2;
 		}
 		else
 		{
@@ -392,8 +474,7 @@ int main(int argc, char* argv[]) {
 		cursorCollidedX = false, cursorCollidedY = false;
 
 
-
-
+		souls.push_back(spawnNewSoul());
 
 		//SOUL BLOCK
 		//int newTime = SDL_GetTicks();
@@ -426,10 +507,10 @@ int main(int argc, char* argv[]) {
 					souls[i].vx *= -1;
 					souls[i].x = blockWidth;
 				}
-				else if (souls[i].x > windowWidth - blockWidth-soulWidth)
+				else if (souls[i].x > (windowWidth/2) - blockWidth-soulWidth)
 				{
 					souls[i].vx *= -1;
-					souls[i].x = windowWidth - blockWidth - soulWidth - 1;
+					souls[i].x = (windowWidth/2) - blockWidth - soulWidth - 1;
 				}
 				if (souls[i].y < blockHeight)
 				{
@@ -470,7 +551,7 @@ int main(int argc, char* argv[]) {
 
 		//draw
 		SDL_Rect rightSide;
-		rightSide.x = 0;
+		rightSide.x = windowWidth/2;
 		rightSide.y = 0;
 		rightSide.w = windowWidth/2;
 		rightSide.h = windowHeight;
@@ -503,7 +584,7 @@ int main(int argc, char* argv[]) {
 
 	
 		//cursor
-		SDL_RenderCopy(ren, crosshairTex, NULL, &mousePos);
+		SDL_RenderCopyEx(ren, crosshairTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
 		//cout <<"x" << mousePos.x << endl;
 
 		SDL_RenderPresent(ren);		
