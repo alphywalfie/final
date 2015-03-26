@@ -25,7 +25,7 @@ int activeSouls = 50;
 int soulHeight = 30; //30
 int soulWidth = 15;
 double soulSpeed = 1.00;
-double soulSpawnRate = 0.5;
+double soulSpawnRate = 0.2;
 
 struct Soul {double x, y, w, h;  float vx, vy;};
 
@@ -490,7 +490,7 @@ int main(int argc, char* argv[]) {
 		}
 		cursorCollidedX = false, cursorCollidedY = false;
 
-		if(frame % (FRAMERATE/4) == 0 && souls.size() < maxSouls && fRand() < soulSpawnRate)
+		if(frame % ((FRAMERATE/4)*(int)(1/soulSpawnRate)) == 0 && souls.size() < maxSouls)
 		{
 			souls.push_back(spawnNewSoul());
 			cout << souls.size() << endl;
