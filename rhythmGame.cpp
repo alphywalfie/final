@@ -10,6 +10,8 @@
 #include <ik_ISound.h>
 #include <string>
 #include <fstream>
+#include <SDL_ttf.h>
+#include <sstream>
 
 const float PI = 3.14159265;
 
@@ -32,6 +34,10 @@ const double soulThreshold = 0; //(this is the maximum height the soul can float
 const double dyingBody = 400; //(this is the bottom or starting position of a soul)
 const double soulNoteHeight = 70;
 const double soulNoteWidth = 80;
+const double scoreBoardWidth = 70;
+const double scoreBoardLeft = viewPortWidth - scoreBoardWidth;
+const double scoreBoardHeight = 50;
+const double feverBarWidth = viewPortWidth - scoreBoardWidth;
 const int maxNotes = 500;
 const int soulDist = dyingBody - soulThreshold; //number of pixels
 const int beatDist = soulDist/4; //distance a soul travels PER BEAT
@@ -73,6 +79,7 @@ bool playerStrum2 = false;
 bool playerStrum3 = false;
 bool alreadyHit = false;
 bool fever = false;
+SDL_Rect scoreBoard = {viewPortWidth-70, windowHeight -50, 40, 50};
 
 //DECLARATIONS FOR THE LATENCY TESTS
 SDL_Rect visual_latency_flash; //flashes the screen a different color at a regular interval
@@ -90,6 +97,12 @@ double seedStep = 1232.57129;
 //READING FILES
 string userSettings[10];
 string savedHighScore[10];
+
+//RENDERING TEXT
+TTF_Font *font;
+SDL_Color color={0,0,0};
+SDL_Surface *text_surface;
+SDL_Texture *textTex;
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -258,6 +271,19 @@ bool loadMedia()
         success = false;
 	}
 
+	if (TTF_Init() ==-1)
+	{
+		printf("Failed to initialize TTF!\n");
+		success=false;
+	}
+
+	font = TTF_OpenFont("calibri.ttf", 14);
+	if( font == NULL ) 
+	{
+		printf("Failed to load font!\n");
+		success=false;
+	}
+
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -319,6 +345,16 @@ void loadFile(char *fileName, string fileContents[])
 		}
 		myfile.close();
 	}
+}
+//--------------------------------------------------------SCORE BOARD------------------------------------------------------
+void renderScoreBoard()
+{
+	stringstream strm;
+	strm << timesHit;
+	text_surface=TTF_RenderText_Solid(font, strm.str().c_str() ,color);
+
+	textTex = SDL_CreateTextureFromSurface( ren, text_surface );
+	SDL_FreeSurface( text_surface );
 }
 //---------------------------------------------BEGIN SONG-------------------------------
 double playMusic()
@@ -419,7 +455,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = viewPortWidth;
+		feverBar.w = feverBarWidth;
 		feverBar.h = 40;
 		fever = true;
 	}
@@ -427,7 +463,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = viewPortWidth*0.75;
+		feverBar.w = feverBarWidth*0.75;
 		feverBar.h = 40;
 		fever = false;
 	}
@@ -435,7 +471,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = viewPortWidth*0.5;
+		feverBar.w = feverBarWidth*0.5;
 		feverBar.h = 40;
 		fever = false;
 	}
@@ -443,7 +479,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = viewPortWidth*0.25;
+		feverBar.w = feverBarWidth*0.25;
 		feverBar.h = 40;
 		fever = false;
 	}
@@ -588,6 +624,8 @@ void playGame()
 			}
 			SDL_RenderCopy(ren, dyingBodyTex, NULL, &dyingBodies[i]);
 		}
+		renderScoreBoard();
+		SDL_RenderCopy(ren, textTex, NULL, &scoreBoard);
 		//check if the note is in the "beatZone", and check if a note has already been hit. if it hasn't already been hit, check if the user hit it
 		if(SDL_HasIntersection(&soulNotes[soulSequence[sequenceID]], &hitZone) && !alreadyHit)
 		{
@@ -673,6 +711,7 @@ void playGame()
 				scoreRecorded = true;
 				running = false;
 			}
+			cin;
 		}
 
 		//draw
