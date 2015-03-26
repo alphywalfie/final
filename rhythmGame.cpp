@@ -39,6 +39,7 @@ SDL_Rect souls[numberOfSouls];
 SDL_Rect hitZone = {0, soulThreshold, windowWidth, soulHeight};
 SDL_Rect feverBar;
 SDL_Rect dyingBodies[numberOfSouls];
+SDL_Rect lanes[numberOfSouls];
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -76,8 +77,6 @@ int soulSequence[sequenceCount];
 //int soulsAtOnce[sequenceCount];
 int sequenceID = 0;
 //int soulsAtOnceID = 0;
-hash<string> str_hash;
-double seed1 = str_hash(songFilename);
 //double seed2 = bpm;
 double seedStep = 1232.57129;
 
@@ -87,6 +86,8 @@ string savedHighScore[3];
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
+	hash<string> str_hash;
+	double seed1 = str_hash(songFilename);
 	uniform_int_distribution<int> distribution1(0,2);
 	//uniform_int_distribution<int> distribution2(1,3);
 	for (int i = 0; i < maxNotes; i++)
@@ -109,6 +110,8 @@ SDL_Texture *dyingBodyTex = NULL;
 SDL_Texture *soulThresholdTex = NULL;
 SDL_Texture *onBeatTex = NULL;
 SDL_Texture *feverBarTex = NULL;
+SDL_Texture *laneTex = NULL;
+SDL_Texture *currentLaneTex = NULL;
 //--------------------------------------------------LOAD TEXTURE METHOD-----------------------------------------------------------
 SDL_Texture *loadTexture(string path)
 {
@@ -226,6 +229,20 @@ bool loadMedia()
         success = false;
 	}
 
+	laneTex = loadTexture("laneDefault.png");
+	if( laneTex == NULL )
+	{
+		printf( "Failed to load texture image!\n" );
+        success = false;
+	}
+
+	currentLaneTex = loadTexture("laneCurrent.png");
+	if( currentLaneTex == NULL )
+	{
+		printf( "Failed to load texture image!\n" );
+        success = false;
+	}
+
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -235,11 +252,20 @@ void close()
 	SDL_DestroyTexture(soulTex);
 	soulTex = NULL;
 
-/*	SDL_DestroyTexture(dyingBodyTex);
+	SDL_DestroyTexture(dyingBodyTex);
 	dyingBodyTex = NULL;
 
-	SDL_DestroyTexture(soulThreshholdTex);
-	soulThreshholdTex = NULL;*/
+	SDL_DestroyTexture(soulThresholdTex);
+	soulThresholdTex = NULL;
+
+	SDL_DestroyTexture(feverBarTex);
+	feverBarTex = NULL;
+
+	SDL_DestroyTexture(laneTex);
+	laneTex = NULL;
+
+	SDL_DestroyTexture(currentLaneTex);
+	currentLaneTex = NULL;
 
 	//Mix_FreeMusic(music);
 	//Mix_CloseAudio();
@@ -287,7 +313,7 @@ double playMusic()
 //------------------------------------INITIALIZE STARTING SOUL POSITIONS----------------------------------------
 void initializeSoulPosition(int i, double startingPosition)
 {
-	souls[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
+	souls[i].x = ((i*2+1)*windowWidth)/(numberOfSouls*2)-soulWidth/2;
 	souls[i].y = startingPosition;
 	souls[i].w = soulWidth;
 	souls[i].h = soulHeight;
@@ -297,10 +323,22 @@ void initializeDyingBodies()
 {
 	for (int i = 0; i < numberOfSouls; i++)
 	{
-		dyingBodies[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
+		//dyingBodies[i].x = ((i+1)*windowWidth)/(numberOfSouls+1);
+		dyingBodies[i].x = ((1+i*2)*windowWidth)/(numberOfSouls*2)-(soulWidth/2);
 		dyingBodies[i].y = dyingBody;
 		dyingBodies[i].w = soulWidth;
 		dyingBodies[i].h = soulHeight;
+	}
+}
+//----------------------------------------------------INITIALIZE LANES-------------------------------------------------------------
+void initializeLanes()
+{
+	for (int i = 0; i < numberOfSouls; i++)
+	{
+		lanes[i].x = i*(windowWidth/numberOfSouls);
+		lanes[i].y = soulThreshold + soulHeight;
+		lanes[i].w = windowWidth/3;
+		lanes[i].h = windowHeight - soulHeight;
 	}
 }
 //-------------------------------------------RENDERING METHOD FOR LOOP------------------------
@@ -322,11 +360,11 @@ void renderSoulFloating(int startingIndex)//, int floatingSouls)
 	//souls[startingIndex].y -= soulThreshold + (songTime/(FRAME_TIME*sequenceCount*soulDist) + pixelsPerFrame); //sync equation version 1
 	souls[startingIndex].y -= soulThreshold + (songTime/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 2
 	//souls[startingIndex].y -= soulThreshold + (currentPlayheadPosition/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 3
-	SDL_RenderCopy(ren, soulTex, NULL, &souls[startingIndex]);
 	if (souls[startingIndex].y + souls[startingIndex].h <= soulThreshold)
 	{
 		initializeSoulPosition(startingIndex, dyingBody);
 	}
+	SDL_RenderCopy(ren, soulTex, NULL, &souls[startingIndex]);
 }
 //----------------------------------------------SCORE TRACKING-----------------------------------------------
 void scoringCheck(int soulIndex)
@@ -430,6 +468,7 @@ int main(int argc, char* argv[]) {
 	double songStartTime = playMusic();
 	initializeSequence();
 	initializeDyingBodies();
+	initializeLanes();
 	bool scoreRecorded = false;
 	for (int i = 0; i < numberOfSouls; i++)
 	{
@@ -479,9 +518,20 @@ int main(int argc, char* argv[]) {
 		//CITE THE SOURCE OF THIS ALGORITHM HERE LATER ON OKAY
 
 		SDL_RenderClear(ren);
-		
+		//render the lanes and the dyingBodies
+		for (int i = 0; i <numberOfSouls; i++)
+		{
+			if(i == soulSequence[sequenceID])
+			{
+				SDL_RenderCopy(ren, currentLaneTex, NULL, &lanes[i]);
+			}
+			else
+			{
+				SDL_RenderCopy(ren, laneTex, NULL, &lanes[i]);
+			}
+			SDL_RenderCopy(ren, dyingBodyTex, NULL, &dyingBodies[i]);
+		}
 		//check if the note is in the "beatZone", and check if a note has already been hit. if it hasn't already been hit, check if the user hit it
-		
 		if(SDL_HasIntersection(&souls[soulSequence[sequenceID]], &hitZone) && !alreadyHit)
 		{
 			scoringCheck(soulSequence[sequenceID]);
@@ -516,10 +566,6 @@ int main(int argc, char* argv[]) {
 		}
 		renderSoulFloating(soulSequence[sequenceID]);
 		comboFever();
-		for (int i = 0; i <numberOfSouls; i++)
-		{
-			SDL_RenderCopy(ren, dyingBodyTex, NULL, &dyingBodies[i]);
-		}
 		if(currentSound->isFinished() == false)
 		{
 			//renderSoulFloating(sequenceID, soulsAtOnce[soulsAtOnceID]);
@@ -544,9 +590,9 @@ int main(int argc, char* argv[]) {
 				sequenceID++;
 			}
 		}
-		else
+		else 
 		{
-			if(scoreRecorded == false)
+			if(scoreRecorded == false && souls[soulSequence[sequenceID]].y == dyingBody)
 			{
 				cout << "Your final score: " << timesHit << endl;
 				if(timesHit > highScore)
