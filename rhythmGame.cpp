@@ -48,6 +48,7 @@ SDL_Rect feverBar;
 SDL_Rect dyingBodies[numberOfSouls];
 SDL_Rect lanes[numberOfSouls];
 SDL_Rect startScreenRect = {0, 0, windowWidth, windowHeight};
+SDL_Rect notifiers[numberOfSouls];
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -79,7 +80,6 @@ bool playerStrum3 = false;
 bool alreadyHit = false;
 bool fever = false;
 SDL_Rect scoreBoard = {viewPortWidth-70, windowHeight -50, 40, 50};
-SDL_Rect greatTextPopup = {80, 70, soulNoteWidth, soulNoteHeight};
 
 //DECLARATIONS FOR THE LATENCY TESTS
 SDL_Rect visual_latency_flash; //flashes the screen a different color at a regular interval
@@ -100,7 +100,8 @@ string savedHighScore[10];
 
 //RENDERING TEXT
 TTF_Font *font;
-SDL_Color color={0,0,0};
+SDL_Color black={0,0,0};
+SDL_Color red={255,0,0};
 SDL_Surface *text_surface;
 SDL_Texture *textTex;
 SDL_Texture *hitTex = NULL;
@@ -134,6 +135,7 @@ SDL_Texture *feverBarTex = NULL;
 SDL_Texture *laneTex = NULL;
 SDL_Texture *currentLaneTex = NULL;
 SDL_Texture *startScreenTex = NULL;
+SDL_Texture *missTex = NULL;
 //--------------------------------------------------LOAD TEXTURE METHOD-----------------------------------------------------------
 SDL_Texture *loadTexture(string path)
 {
@@ -211,7 +213,7 @@ bool init()
     return initSuccess;
 }
 //---------------------------------------------------RENDER ANY TEXT----------------------------------------------------------------------
-SDL_Texture *renderTEXTure(string textToRender)
+SDL_Texture *renderTEXTure(string textToRender, SDL_Color color)
 {
 	SDL_Surface *renderedTextSurface = NULL;
 	SDL_Texture *renderedTextTexture = NULL;
@@ -296,10 +298,17 @@ bool loadMedia()
 		success=false;
 	}
 
-	hitTex = renderTEXTure("Great!");
+	hitTex = renderTEXTure("Great!", black);
 	if(hitTex ==NULL)
 	{
-		printf("Failed to load hitTex!\n");
+		printf("Failed to render hitTex!\n");
+		success=false;
+	}
+
+	missTex = renderTEXTure("Miss!",red);
+	if(missTex == NULL)
+	{
+		printf("Failed to render missTex!\n");
 		success=false;
 	}
 
@@ -329,6 +338,18 @@ void close()
 
 	SDL_DestroyTexture(startScreenTex);
 	startScreenTex = NULL;
+
+	SDL_DestroyTexture(onBeatTex);
+	onBeatTex = NULL;
+
+	SDL_DestroyTexture(hitTex);
+	onBeatTex = NULL;
+
+	SDL_DestroyTexture(textTex);
+	textTex = NULL;
+
+	SDL_DestroyTexture(missTex);
+	missTex = NULL;
 
 	engine->drop();
 	if(currentSound != NULL)
@@ -370,7 +391,7 @@ void renderScoreBoard()
 {
 	stringstream strm;
 	strm << timesHit;
-	text_surface=TTF_RenderText_Solid(font, strm.str().c_str() ,color);
+	text_surface=TTF_RenderText_Solid(font, strm.str().c_str() ,black);
 
 	textTex = SDL_CreateTextureFromSurface( ren, text_surface );
 	SDL_FreeSurface( text_surface );
@@ -414,6 +435,17 @@ void initializeLanes()
 		lanes[i].h = windowHeight - soulNoteHeight;
 	}
 }
+//--------------------------------------------------------INITIALIZE NOTIFIERS-------------------------------------------------------------------
+void initializeNotifiers()
+{
+	for (int i = 0; i < numberOfSouls; i++)
+	{
+		notifiers[i].x = ((1+i*2)*viewPortWidth)/(numberOfSouls*2)-(soulNoteWidth/2);
+		notifiers[i].y = soulThreshold+soulNoteHeight;
+		notifiers[i].w = soulNoteWidth;
+		notifiers[i].h = soulNoteHeight;
+	}
+}
 //-------------------------------------------RENDERING METHOD FOR LOOP------------------------
 void renderSoulFloating(int startingIndex)//, int floatingSouls)
 {	
@@ -449,7 +481,7 @@ void scoringCheck(int soulIndex)
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum1 = false;
-			SDL_RenderCopy(ren, hitTex, NULL, &greatTextPopup);
+			SDL_RenderCopy(ren, hitTex, NULL, &notifiers[soulIndex]);
 		}
 		else if(soulIndex==1&&playerStrum2==true)
 		{
@@ -458,6 +490,7 @@ void scoringCheck(int soulIndex)
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum2 = false;
+			SDL_RenderCopy(ren, hitTex, NULL, &notifiers[soulIndex]);
 		}
 		else if (soulIndex==2&playerStrum3==true)
 		{
@@ -466,6 +499,7 @@ void scoringCheck(int soulIndex)
 			cout << "good job x" <<timesHit << endl;
 			alreadyHit = true;
 			playerStrum3 = false;
+			SDL_RenderCopy(ren, hitTex, NULL, &notifiers[soulIndex]);
 		}
 }
 //-------------------------------------------------------------------FEVER STATUS-------------------------------------------------------------------
@@ -582,6 +616,7 @@ void playGame()
 	initializeSequence();
 	initializeDyingBodies();
 	initializeLanes();
+	initializeNotifiers();
 	bool scoreRecorded = false;
 	for (int i = 0; i < numberOfSouls; i++)
 	{
@@ -661,6 +696,7 @@ void playGame()
 				timesMissed++;
 				combo = 0;
 				cout<<"miss! x"<<timesMissed<<endl;
+				SDL_RenderCopy(ren, missTex, NULL, &notifiers[0]);
 				playerStrum1 = false;
 			}
 			if(playerStrum2 == true)
@@ -669,6 +705,7 @@ void playGame()
 				combo = 0;
 				playerStrum2 = false;
 				cout<<"miss! x"<<timesMissed<<endl;
+				SDL_RenderCopy(ren, missTex, NULL, &notifiers[1]);
 			}
 			if(playerStrum3 == true)
 			{
@@ -676,6 +713,7 @@ void playGame()
 				combo = 0;
 				playerStrum3 = false;
 				cout<<"miss! x"<<timesMissed<<endl;
+				SDL_RenderCopy(ren, missTex, NULL, &notifiers[2]);
 			}
 		}
 		comboFever();
@@ -694,6 +732,7 @@ void playGame()
 					timesMissed++;
 					combo = 0;
 					cout<<"miss! x"<<timesMissed<<endl;
+					SDL_RenderCopy(ren, missTex, NULL, &notifiers[soulSequence[sequenceID]]);
 				}
 				sequenceID++;
 			}
