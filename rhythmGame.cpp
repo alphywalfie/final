@@ -24,6 +24,7 @@ const int viewPortWidth = windowWidth/2;
 const int windowHeight = 600;//600
 const int FRAMERATE = 60;
 const double FRAME_TIME = 1000/FRAMERATE;
+bool running = false;
 
 //CONSTANTS FOR THE GAME'S GRAPHICS
 const int numberOfSouls = 3;
@@ -41,6 +42,7 @@ SDL_Rect hitZone = {0, soulThreshold, viewPortWidth, soulHeight};
 SDL_Rect feverBar;
 SDL_Rect dyingBodies[numberOfSouls];
 SDL_Rect lanes[numberOfSouls];
+SDL_Rect startScreenRect = {0, 0, windowWidth, windowHeight};
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -116,6 +118,7 @@ SDL_Texture *onBeatTex = NULL;
 SDL_Texture *feverBarTex = NULL;
 SDL_Texture *laneTex = NULL;
 SDL_Texture *currentLaneTex = NULL;
+SDL_Texture *startScreenTex = NULL;
 //--------------------------------------------------LOAD TEXTURE METHOD-----------------------------------------------------------
 SDL_Texture *loadTexture(string path)
 {
@@ -247,6 +250,13 @@ bool loadMedia()
         success = false;
 	}
 
+	startScreenTex = loadTexture("startScreen.png");
+	if( startScreenTex == NULL )
+	{
+		printf( "Failed to load texture image!\n" );
+        success = false;
+	}
+
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -270,6 +280,9 @@ void close()
 
 	SDL_DestroyTexture(currentLaneTex);
 	currentLaneTex = NULL;
+
+	SDL_DestroyTexture(startScreenTex);
+	startScreenTex = NULL;
 
 	//Mix_FreeMusic(music);
 	//Mix_CloseAudio();
@@ -463,20 +476,9 @@ void setDifficulty(string diffSetting)
 	}
 }
 //-------------------------------------------MAIN LOOP-----------------------------
-
-int main(int argc, char* argv[]) {
-	
-	if( !init() )
-    {
-        printf( "Failed to initialize!\n" );
-		return 0;
-    }
-	if( !loadMedia() )
-    {
-        printf( "Failed to load media!\n" );
-		return 9;
-    }
-	//************************************************USER GENERATED CONTENT AND HIGH SCORE STORAGE****************************************************
+void playGame()
+{
+	//************************************************USER SETTINGS AND HIGH SCORE STORAGE************************************************************
 	loadFile("gameSettings.txt", userSettings);
 	loadFile("highScore.txt", savedHighScore);
 	songFilename = userSettings[3];
@@ -656,7 +658,52 @@ int main(int argc, char* argv[]) {
 			SDL_Delay(FRAME_TIME - (SDL_GetTicks() - frameTimeStart));
 		}
 	}
-
+}
+int main(int argc, char* argv[]) 
+{
+	if( !init() )
+    {
+        printf( "Failed to initialize!\n" );
+		return 0;
+    }
+	if( !loadMedia() )
+    {
+        printf( "Failed to load media!\n" );
+		return 9;
+    }
+	bool startScreen = true;
+	bool beginGame = false;
+	while (startScreen)	
+	{	
+		//read input
+		SDL_Event ev;
+		while(SDL_PollEvent(&ev) != 0) 
+		{
+			if(ev.type == SDL_QUIT) 
+			{
+				startScreen = false;
+			}
+			else if (ev.type == SDL_KEYDOWN)
+			{
+				if (ev.key.keysym.sym == SDLK_SPACE)
+				{
+					beginGame = true;
+					startScreen = false;
+				}
+				if (ev.key.keysym.sym == SDLK_ESCAPE)
+				{
+					startScreen = false;
+				}
+			}
+			SDL_RenderClear(ren);
+			SDL_RenderCopy(ren, startScreenTex, NULL, &startScreenRect);
+			SDL_RenderPresent(ren);
+		}
+	}
+	if(beginGame)
+	{
+		playGame();
+	}
 	close();
 	return 0;
 }
