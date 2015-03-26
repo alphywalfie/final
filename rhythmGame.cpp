@@ -80,6 +80,7 @@ bool playerStrum3 = false;
 bool alreadyHit = false;
 bool fever = false;
 SDL_Rect scoreBoard = {viewPortWidth-70, windowHeight -50, 40, 50};
+SDL_Rect comboNotif = {viewPortWidth/2-50, windowHeight/2, 100, 40};
 
 //DECLARATIONS FOR THE LATENCY TESTS
 SDL_Rect visual_latency_flash; //flashes the screen a different color at a regular interval
@@ -105,6 +106,7 @@ SDL_Color red={255,0,0};
 SDL_Surface *text_surface;
 SDL_Texture *textTex;
 SDL_Texture *hitTex = NULL;
+SDL_Texture *comboTex = NULL;
 //-----------------------------------------------------------GENERATE SEQUENCE OF NOTES-----------------------------------------------------------------------
 void initializeSequence()
 {	
@@ -220,7 +222,7 @@ SDL_Texture *renderTEXTure(string textToRender, SDL_Color color)
 	renderedTextSurface = TTF_RenderText_Solid(font, textToRender.c_str() ,color);
 
 	renderedTextTexture = SDL_CreateTextureFromSurface( ren, renderedTextSurface );
-	SDL_FreeSurface( text_surface );
+	SDL_FreeSurface( renderedTextSurface );
 	return renderedTextTexture;
 }
 //-----------------------------------------------------------LOAD MEDIA------------------------------------------------------
@@ -311,7 +313,6 @@ bool loadMedia()
 		printf("Failed to render missTex!\n");
 		success=false;
 	}
-
     return success;
 }
 //---------------------------------------------------CLOSING METHOD---------------------------------------------
@@ -350,6 +351,9 @@ void close()
 
 	SDL_DestroyTexture(missTex);
 	missTex = NULL;
+
+	SDL_DestroyTexture(comboTex);
+	comboTex=NULL;
 
 	engine->drop();
 	if(currentSound != NULL)
@@ -465,6 +469,7 @@ void renderSoulFloating(int startingIndex)//, int floatingSouls)
 	//souls[startingIndex].y -= soulThreshold + (songTime/(FRAME_TIME*sequenceCount*soulDist) + pixelsPerFrame); //sync equation version 1
 	soulNotes[startingIndex].y -= (songTime/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 2
 	//souls[startingIndex].y -= soulThreshold + (currentPlayheadPosition/(FRAME_TIME*sequenceID*soulDist) + pixelsPerFrame); //sync equation version 3
+	//soulNotes[startingIndex].y -= (songTime/(FRAME_TIME*(soulNotes[startingIndex].y/soulDist)) + pixelsPerFrame);
 	if (soulNotes[startingIndex].y + soulNotes[startingIndex].h <= soulThreshold)
 	{
 		initializeSoulPosition(startingIndex, dyingBody);
@@ -505,6 +510,8 @@ void scoringCheck(int soulIndex)
 //-------------------------------------------------------------------FEVER STATUS-------------------------------------------------------------------
 void comboFever()
 {
+	stringstream ss;
+	ss<<"Combo! x"<< combo;
 	if (combo >= minimumFever)
 	{
 		feverBar.x = 0;
@@ -534,8 +541,11 @@ void comboFever()
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
 		feverBar.w = feverBarWidth*0.25;
-		feverBar.h = 40;
-		fever = false;
+	}
+	if(combo >= 5)
+	{
+		comboTex = renderTEXTure(ss.str(), black);
+		SDL_RenderCopy(ren, comboTex, NULL, &comboNotif);
 	}
 	else
 	{
