@@ -401,7 +401,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = windowWidth;
+		feverBar.w = viewPortWidth;
 		feverBar.h = 40;
 		fever = true;
 	}
@@ -409,7 +409,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = windowWidth*0.75;
+		feverBar.w = viewPortWidth*0.75;
 		feverBar.h = 40;
 		fever = false;
 	}
@@ -417,7 +417,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = windowWidth*0.5;
+		feverBar.w = viewPortWidth*0.5;
 		feverBar.h = 40;
 		fever = false;
 	}
@@ -425,7 +425,7 @@ void comboFever()
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
-		feverBar.w = windowWidth*0.25;
+		feverBar.w = viewPortWidth*0.25;
 		feverBar.h = 40;
 		fever = false;
 	}
