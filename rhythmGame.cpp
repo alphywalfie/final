@@ -284,10 +284,11 @@ void close()
 	SDL_DestroyTexture(startScreenTex);
 	startScreenTex = NULL;
 
-	//Mix_FreeMusic(music);
-	//Mix_CloseAudio();
 	engine->drop();
-	currentSound->drop();
+	if(currentSound != NULL)
+	{
+		currentSound->drop();
+	}
 
 	//Destroy Renderer
 	SDL_DestroyRenderer(ren);
