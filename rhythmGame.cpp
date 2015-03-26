@@ -64,6 +64,7 @@ int timesHit = 0;
 int combo = 0;
 int highestPlayerCombo = 0;
 int playerScore;
+int minimumFever;
 bool playerStrum1 = false;
 bool playerStrum2 = false;
 bool playerStrum3 = false;
@@ -399,7 +400,7 @@ void scoringCheck(int soulIndex)
 //-------------------------------------------------------------------FEVER STATUS-------------------------------------------------------------------
 void comboFever()
 {
-	if (combo >= 20)
+	if (combo >= minimumFever)
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
@@ -407,7 +408,7 @@ void comboFever()
 		feverBar.h = 40;
 		fever = true;
 	}
-	else if (combo >= 15)
+	else if (combo >= minimumFever*0.75)
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
@@ -415,7 +416,7 @@ void comboFever()
 		feverBar.h = 40;
 		fever = false;
 	}
-	else if (combo >= 10)
+	else if (combo >= minimumFever*0.5)
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
@@ -423,7 +424,7 @@ void comboFever()
 		feverBar.h = 40;
 		fever = false;
 	}
-	else if (combo >= 5)
+	else if (combo >= minimumFever*0.25)
 	{
 		feverBar.x = 0;
 		feverBar.y = windowHeight-40;
@@ -443,6 +444,22 @@ void comboFever()
 	if (combo > highestPlayerCombo)
 	{
 		highestPlayerCombo = combo;
+	}
+}
+//------------------------------------------------------------SET GAME DIFFICULTY-------------------------------------------------------------
+void setDifficulty(string diffSetting)
+{
+	if (diffSetting == "Easy")
+	{
+		minimumFever = 20;
+	}
+	else if (diffSetting == "Normal")
+	{
+		minimumFever = 40;
+	}
+	else if (diffSetting == "Hard")
+	{
+		minimumFever = 80;
 	}
 }
 //-------------------------------------------MAIN LOOP-----------------------------
@@ -472,7 +489,9 @@ int main(int argc, char* argv[]) {
 	double highestComboScore = stoi(savedHighScore[6]);
 	string playerNameScore = savedHighScore[3];
 	string playerNameCombo = savedHighScore[8];
+	string playerDifficulty = userSettings[9];
 	//**************************************************************************************************************************************************
+	setDifficulty(playerDifficulty);
 	bool running = true;
 	double songStartTime = playMusic();
 	initializeSequence();
