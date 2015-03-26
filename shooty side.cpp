@@ -9,13 +9,13 @@
 const float PI = 3.14159265;
 using namespace std;
 #include "boxCircleCollision.hpp"
-#include "custom lvl.txt"
 
 const int windowHeight = 600;
 const int windowWidth = windowHeight*2;
 const int FRAMERATE = 60;
 const double FRAME_TIME = 1000/FRAMERATE;
-const int blockWidth = (windowWidth/2)/12;
+const int wallThickness = 75;
+const int blockWidth = ((windowWidth/2)-(2*wallThickness))/10;
 const int blockHeight = blockWidth;
 
 int cursorRadius = 15;
@@ -24,7 +24,7 @@ int maxSouls = 500;
 int activeSouls = 50;
 int soulHeight = 30; //30
 int soulWidth = 15;
-double soulSpeed = 1.00;
+double soulSpeed = 0.5;
 double soulSpawnRate = 0.2;
 
 struct Soul {double x, y, w, h;  float vx, vy;};
@@ -32,6 +32,9 @@ struct Soul {double x, y, w, h;  float vx, vy;};
 vector<Soul> souls(activeSouls);
 
 vector<SDL_Rect> obstacles(0);
+#include "custom lvl.txt"
+int customObstacles[100];
+SDL_Rect walls[4];
 
 
 SDL_Window *win = NULL;
@@ -190,16 +193,135 @@ float fRand()
 	return rand()/(float)RAND_MAX;
 }
 
-void initObstaclesCustom()
+/*pixel getter courtesy of http://www.libsdl.org/release/SDL-1.2.15/docs/html/guidevideo.html*/
+Uint32 getpixel(SDL_Surface *surface, int x, int y)
 {
+    int bpp = surface->format->BytesPerPixel;
+    /* Here p is the address to the pixel we want to retrieve */
+    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+	//cout << bpp << endl;
+    switch(bpp) {
+    case 1:
+        return *p;
+
+    case 2:
+        return *(Uint16 *)p;
+
+    case 3:
+		//cout << (p[0] << 16) << endl;
+        if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
+            return p[0] << 16 | p[1] << 8 | p[2];
+        else
+            return p[0] | p[1] << 8 | p[2] << 16;
+
+    case 4:
+        return *(Uint32 *)p;
+
+    default:
+        return 0;       /* shouldn't happen, but avoids warnings */
+    }
+}
+
+bool readCustomLevel() {
+	bool success = true;
 	for (int i = 0; i < 100; i++)
 	{
-		if (obstacleLayout[i] != 0)
+		customObstacles[i] = 0;
+	}
+	SDL_Surface *customLevel = SDL_LoadBMP("customlvl.BMP");
+	if( customLevel == NULL )
+    {
+        printf( "Failed to load custom level image!\n" );
+        success = false;
+    }
+	Uint8 r = 0, g = 0, b = 0;
+
+	SDL_LockSurface(customLevel);
+
+	for (int i = 0; i < 10; i++)
+	{
+		for (int j = 0; j < 10; j++)
 		{
-			SDL_Rect obstacleBlock = {blockWidth+(i%10)*blockWidth, blockHeight+(i/10)*blockHeight, blockWidth, blockHeight};
-			obstacles.push_back(obstacleBlock);
+			SDL_GetRGB(getpixel(customLevel, i, j), customLevel->format, &r, &g, &b);
+			if ((int)r == 0)
+			{
+				customObstacles[(i*10)+j] = 1;
+			}
 		}
 	}
+	
+	cout << (int)r << " " << (int)g << " " << (int)b <<endl;
+
+	return success;
+}
+
+void initObstacles(int levelChoice)
+{
+	obstacles.clear();
+	switch (levelChoice) {
+	case 0:
+		for (int i = 0; i < 100; i++)
+		{
+			if (highwayLayout[i] != 0)
+			{
+				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				obstacles.push_back(obstacleBlock);
+			}
+		}
+		break;
+	case 1:
+		for (int i = 0; i < 100; i++)
+		{
+			if (livingLayout[i] != 0)
+			{
+				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				obstacles.push_back(obstacleBlock);
+			}
+		}
+		break;
+	case 2:
+		for (int i = 0; i < 100; i++)
+		{
+			if (killLayout[i] != 0)
+			{
+				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				obstacles.push_back(obstacleBlock);
+			}
+		}
+		break;
+	default:
+		for (int i = 0; i < 100; i++)
+		{
+			if (customObstacles[i] != 0)
+			{
+				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				obstacles.push_back(obstacleBlock);
+			}
+		}
+		break;
+	}
+}
+
+void loadWalls() {
+	walls[0].x = 0;
+	walls[0].y = 0;
+	walls[0].w = (windowWidth/2);
+	walls[0].h = wallThickness;
+	
+	walls[1].x = 0;
+	walls[1].y = 0;
+	walls[1].w = wallThickness;
+	walls[1].h = windowHeight;
+
+	walls[2].x = 0;
+	walls[2].y = windowHeight-wallThickness;
+	walls[2].w = (windowWidth/2);
+	walls[2].h = wallThickness;
+	
+	walls[3].x = (windowWidth/2)-wallThickness;
+	walls[3].y = 0;
+	walls[3].w = wallThickness;
+	walls[3].h = windowHeight;
 }
 
 void initSouls() // MUST RUN AFTER OBSTACLE INIT
@@ -209,8 +331,8 @@ void initSouls() // MUST RUN AFTER OBSTACLE INIT
 		bool soulPosOk = false;
 		while (!soulPosOk)
 		{
-			souls[i].x = (fRand() * (windowWidth/2)-blockWidth*2) + blockWidth;
-			souls[i].y = (fRand() * windowHeight-blockHeight*2) + blockHeight;
+			souls[i].x = (fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
+			souls[i].y = (fRand() * (windowHeight-wallThickness*2)) + wallThickness;
 			souls[i].w = soulWidth;
 			souls[i].h = soulHeight;
 			float theta = fRand()*2*PI;
@@ -222,6 +344,14 @@ void initSouls() // MUST RUN AFTER OBSTACLE INIT
 			for (int j = 0; j < obstacles.size(); j++)
 			{
 				if (SDL_HasIntersection(&soulTestRect, &obstacles[j]) == SDL_TRUE)
+				{
+					cout << "PROBLEMATIC SOUL INDEX: "<< i << " " << obstacles.size() << endl;
+					problematicSoul = true;
+				}
+			}
+			for (int j = 0; j < 4; j++)
+			{
+				if (SDL_HasIntersection(&soulTestRect, &walls[j]) == SDL_TRUE)
 				{
 					cout << "PROBLEMATIC SOUL INDEX: "<< i << " " << obstacles.size() << endl;
 					problematicSoul = true;
@@ -240,8 +370,8 @@ Soul spawnNewSoul() {
 	Soul soul;
 	while (!soulPosOk)
 	{
-		soul.x = (fRand() * (windowWidth/2)-blockWidth*2) + blockWidth;
-		soul.y = (fRand() * windowHeight-blockHeight*2) + blockHeight;
+		soul.x = (fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
+		soul.y = (fRand() * (windowHeight-wallThickness*2)) + wallThickness;
 		soul.w = soulWidth;
 		soul.h = soulHeight;
 		float theta = fRand()*2*PI;
@@ -258,6 +388,14 @@ Soul spawnNewSoul() {
 				problematicSoul = true;
 			}
 		}
+		for (int j = 0; j < 4; j++)
+		{
+			if (SDL_HasIntersection(&soulTestRect, &walls[j]) == SDL_TRUE)
+			{
+				cout << "PROBLEMATIC SOUL INDEX: "<< "new spawn" << " " << obstacles.size() << endl;
+				problematicSoul = true;
+			}
+		}
 		if (!problematicSoul)
 		{
 			soulPosOk = true;
@@ -265,8 +403,6 @@ Soul spawnNewSoul() {
 	}
 	return soul;
 }
-
-
 
 
 
@@ -284,13 +420,18 @@ int main(int argc, char* argv[]) {
         printf( "Failed to load media!\n" );
 		return 0;
     }
+	if (!readCustomLevel())
+	{
+		printf( "Failed to load custom level!\n" );
+		return 0;
+	}
 
 	//SDL_ShowCursor(0);	
 	SDL_SetRelativeMouseMode(SDL_TRUE);
-	
-	initObstaclesCustom();
-	initSouls();
-	
+
+	initObstacles(8);
+	loadWalls();
+	initSouls();	
 
 	bool running = true;
 	float existingSouls = 0.5;
@@ -310,27 +451,6 @@ int main(int argc, char* argv[]) {
 	int bulletDelay = FRAMERATE / 5;
 
 	int killCount = 0;
-
-	SDL_Rect walls[4];
-	walls[0].x = 0;
-	walls[0].y = 0;
-	walls[0].w = (windowWidth/2);
-	walls[0].h = blockHeight;
-	
-	walls[1].x = 0;
-	walls[1].y = 0;
-	walls[1].w = blockWidth;
-	walls[1].h = windowHeight;
-
-	walls[2].x = 0;
-	walls[2].y = windowHeight-blockHeight;
-	walls[2].w = (windowWidth/2);
-	walls[2].h = blockHeight;
-	
-	walls[3].x = (windowWidth/2)-blockWidth;
-	walls[3].y = 0;
-	walls[3].w = blockWidth;
-	walls[3].h = windowHeight;
 
 	SDL_Rect rightSide;
 		rightSide.x = windowWidth/2;
@@ -490,6 +610,7 @@ int main(int argc, char* argv[]) {
 		}
 		cursorCollidedX = false, cursorCollidedY = false;
 
+		//if(frame % ((FRAMERATE/4) == 0 && souls.size() < maxSouls && fRand() < soulSpawnRate)
 		if(frame % ((FRAMERATE/4)*(int)(1/soulSpawnRate)) == 0 && souls.size() < maxSouls)
 		{
 			souls.push_back(spawnNewSoul());
@@ -522,24 +643,24 @@ int main(int argc, char* argv[]) {
 				SDL_Rect astralX = {souls[i].x + souls[i].vx, souls[i].y, soulWidth, soulHeight};
 				SDL_Rect astralY = {souls[i].x, souls[i].y + souls[i].vy, soulWidth, soulHeight};
 				//BOUNCE OFF WALLS
-				if (souls[i].x < blockWidth)
+				if (souls[i].x < wallThickness)
 				{
 					souls[i].vx *= -1;
-					souls[i].x = blockWidth;
+					souls[i].x = wallThickness;
 				}
-				else if (souls[i].x > (windowWidth/2) - blockWidth-soulWidth)
+				else if (souls[i].x > (windowWidth/2) - wallThickness-soulWidth)
 				{
 					souls[i].vx *= -1;
-					souls[i].x = (windowWidth/2) - blockWidth - soulWidth - 1;
+					souls[i].x = (windowWidth/2) - wallThickness - soulWidth - 1;
 				}
-				if (souls[i].y < blockHeight)
+				if (souls[i].y < wallThickness)
 				{
 					souls[i].vy *= -1;
-					souls[i].y = blockHeight;
+					souls[i].y = wallThickness;
 				}
-				else if (souls[i].y > windowHeight - blockHeight-soulHeight)
+				else if (souls[i].y > windowHeight - wallThickness-soulHeight)
 				{
-					souls[i].y = windowHeight - blockHeight-soulHeight;
+					souls[i].y = windowHeight - wallThickness-soulHeight;
 					souls[i].vy *= -1;
 				}
 
