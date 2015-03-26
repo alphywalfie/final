@@ -289,7 +289,7 @@ void initObstacles(int levelChoice)
 		{
 			if (highwayLayout[i] != 0)
 			{
-				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				SDL_Rect obstacleBlock = {(windowWidth/2)+wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
 				obstacles.push_back(obstacleBlock);
 			}
 		}
@@ -299,7 +299,7 @@ void initObstacles(int levelChoice)
 		{
 			if (livingLayout[i] != 0)
 			{
-				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				SDL_Rect obstacleBlock = {(windowWidth/2)+wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
 				obstacles.push_back(obstacleBlock);
 			}
 		}
@@ -309,7 +309,7 @@ void initObstacles(int levelChoice)
 		{
 			if (killLayout[i] != 0)
 			{
-				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				SDL_Rect obstacleBlock = {(windowWidth/2)+wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
 				obstacles.push_back(obstacleBlock);
 			}
 		}
@@ -319,7 +319,7 @@ void initObstacles(int levelChoice)
 		{
 			if (customObstacles[i] != 0)
 			{
-				SDL_Rect obstacleBlock = {wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
+				SDL_Rect obstacleBlock = {(windowWidth/2)+wallThickness+(i%10)*blockWidth, wallThickness+(i/10)*blockHeight, blockWidth, blockHeight};
 				obstacles.push_back(obstacleBlock);
 			}
 		}
@@ -328,22 +328,22 @@ void initObstacles(int levelChoice)
 }
 
 void loadWalls() {
-	walls[0].x = 0;
+	walls[0].x = (windowWidth/2);
 	walls[0].y = 0;
 	walls[0].w = (windowWidth/2);
 	walls[0].h = wallThickness;
 	
-	walls[1].x = 0;
+	walls[1].x = (windowWidth/2);
 	walls[1].y = 0;
 	walls[1].w = wallThickness;
 	walls[1].h = windowHeight;
 
-	walls[2].x = 0;
+	walls[2].x = (windowWidth/2);
 	walls[2].y = windowHeight-wallThickness;
 	walls[2].w = (windowWidth/2);
 	walls[2].h = wallThickness;
 	
-	walls[3].x = (windowWidth/2)-wallThickness;
+	walls[3].x = windowWidth-wallThickness;
 	walls[3].y = 0;
 	walls[3].w = wallThickness;
 	walls[3].h = windowHeight;
@@ -356,7 +356,7 @@ void initSouls() // MUST RUN AFTER OBSTACLE INIT
 		bool soulPosOk = false;
 		while (!soulPosOk)
 		{
-			souls[i].x = (fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
+			souls[i].x = (windowWidth/2)+(fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
 			souls[i].y = (fRand() * (windowHeight-wallThickness*2)) + wallThickness;
 			souls[i].w = soulWidth;
 			souls[i].h = soulHeight;
@@ -395,7 +395,7 @@ Soul spawnNewSoul() {
 	Soul soul;
 	while (!soulPosOk)
 	{
-		soul.x = (fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
+		soul.x = (windowWidth/2)+(fRand() * ((windowWidth/2)-wallThickness*2)) + wallThickness;
 		soul.y = (fRand() * (windowHeight-wallThickness*2)) + wallThickness;
 		soul.w = soulWidth;
 		soul.h = soulHeight;
@@ -465,7 +465,8 @@ int main(int argc, char* argv[]) {
 	int mouseMotionX = 0, mouseMotionY = 0;
 	//int newMouseX = 0, newMouseY = 0;
 	//SDL_GetMouseState(&mouseMotionX, &mouseMotionY);
-	SDL_Rect mousePos = {(windowWidth/2)/2, windowHeight/2, cursorRadius*2, cursorRadius*2};
+	SDL_Rect mousePos = {windowWidth*3/4, windowHeight/2, cursorRadius*2, cursorRadius*2};
+	SDL_Rect bgRect = {windowWidth/2, 0, windowWidth/2, windowHeight};
 	bool cursorCollidedX = false;
 	bool cursorCollidedY = false;
 
@@ -477,15 +478,15 @@ int main(int argc, char* argv[]) {
 
 	int killCount = 0;
 
-	SDL_Rect rightSide;
+	/*SDL_Rect rightSide;
 		rightSide.x = windowWidth/2;
 		rightSide.y = 0;
 		rightSide.w = windowWidth/2;
 		rightSide.h = windowHeight;
-		SDL_RenderSetViewport(ren, &rightSide);
+		SDL_RenderSetViewport(ren, &rightSide);*/
 
 	SDL_Rect gunHeatBar;
-		gunHeatBar.x = (windowWidth/2) - (wallThickness*2/3);
+		gunHeatBar.x = windowWidth - (wallThickness*2/3);
 		gunHeatBar.y =  windowHeight-wallThickness/2;
 		gunHeatBar.w = wallThickness/3;
 		gunHeatBar.h = windowHeight/4;
@@ -586,31 +587,6 @@ int main(int argc, char* argv[]) {
 
 
 		//MOUSE BLOCK
-		/*if (newMouseX < blockWidth)
-		{
-			mousePos.x = blockWidth;
-			cout << mousePos.x << endl;
-		}
-		else if (newMouseX > (windowWidth/2)-blockWidth-cursorRadius*2)
-		{
-			mousePos.x = (windowWidth/2)-blockWidth-cursorRadius*2;
-		}
-		else
-		{
-			mousePos.x = newMouseX;
-		}
-		if (newMouseY < blockHeight)
-		{
-			mousePos.y = blockHeight;
-		}
-		else if (newMouseY > windowHeight-blockHeight-cursorRadius*2)
-		{
-			mousePos.y = windowHeight-blockHeight-cursorRadius*2;
-		}
-		else
-		{
-			mousePos.y = newMouseY;
-		}*/
 		SDL_Rect projectedMousePositionX = {mousePos.x+mouseMotionX, mousePos.y, cursorRadius*2, cursorRadius*2};
 		SDL_Rect projectedMousePositionY = {mousePos.x, mousePos.y+mouseMotionY, cursorRadius*2, cursorRadius*2};
 		for (int i = 0; i < 4; i++)
@@ -680,15 +656,15 @@ int main(int argc, char* argv[]) {
 				SDL_Rect astralX = {souls[i].x + souls[i].vx, souls[i].y, soulWidth, soulHeight};
 				SDL_Rect astralY = {souls[i].x, souls[i].y + souls[i].vy, soulWidth, soulHeight};
 				//BOUNCE OFF WALLS
-				if (souls[i].x < wallThickness)
+				if (souls[i].x < (windowWidth/2)+wallThickness)
 				{
 					souls[i].vx *= -1;
-					souls[i].x = wallThickness;
+					souls[i].x = (windowWidth/2)+wallThickness;
 				}
-				else if (souls[i].x > (windowWidth/2) - wallThickness-soulWidth)
+				else if (souls[i].x > windowWidth - wallThickness-soulWidth)
 				{
 					souls[i].vx *= -1;
-					souls[i].x = (windowWidth/2) - wallThickness - soulWidth - 1;
+					souls[i].x = windowWidth - wallThickness - soulWidth;
 				}
 				if (souls[i].y < wallThickness)
 				{
@@ -729,7 +705,7 @@ int main(int argc, char* argv[]) {
 
 		//draw
 		SDL_RenderClear(ren);
-
+		SDL_RenderCopy(ren, bgTex, NULL, &bgRect);
 
 		
 		//SDL_RenderCopyEx(ren, soulTex, NULL, &target, frame, NULL, SDL_FLIP_NONE);
