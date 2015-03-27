@@ -509,7 +509,14 @@ void renderSoulFloating(int startingIndex)//, int floatingSouls)
 	{
 		initializeSoulPosition(startingIndex, dyingBody);
 	}
-	SDL_RenderCopy(ren, soulTex, NULL, &soulNotes[startingIndex]);
+	if (!alreadyHit)
+	{
+		SDL_RenderCopy(ren, soulTex, NULL, &soulNotes[startingIndex]);
+	}
+	else
+	{
+
+	}
 }
 //----------------------------------------------SCORE TRACKING-----------------------------------------------
 void scoringCheck(int soulIndex)
@@ -830,6 +837,29 @@ void playGame()
 		}
 	}
 }
+
+
+//http://upshots.org/actionscript/jsas-understanding-easing
+double easeIn(int framesPassed, int duration, double power) {
+	return pow(((double)framesPassed / (double)duration), power);
+
+}
+
+double easeOut(int framesPassed, int duration, double power) {
+	return 1 - pow(1 - ((double)framesPassed / (double)duration), power);
+}
+
+//http://gizma.com/easing/#quint3
+double easeInOut(int framesPassed, int duration, double power) {
+	double percentage = ((double)framesPassed / ((double)duration/2));
+	if (percentage < 1)
+	{
+		return pow(percentage, power)/2;
+	}
+	percentage -= 2;
+	int weirdFactor = pow(-1, power+1);
+	return ((pow(percentage, power)+(2*weirdFactor))/2*weirdFactor);
+}
 int main(int argc, char* argv[]) 
 {
 	if( !init() )
@@ -844,8 +874,27 @@ int main(int argc, char* argv[])
     }
 	bool startScreen = true;
 	bool beginGame = false;
+	
+	SDL_Rect firstOption = {windowWidth/3, windowHeight/2, windowWidth/3, 100};
+	SDL_Rect secondOption = {windowWidth + windowWidth/3, firstOption.y, firstOption.w, firstOption.h};
+	SDL_Rect thirdOption = {2*windowWidth + windowWidth/3, firstOption.y, firstOption.w, firstOption.h};
+	SDL_Rect fourthOption = {3*windowWidth + windowWidth/3, firstOption.y, firstOption.w, firstOption.h};
+	int frame = 0;
+	bool rightPressed = false;
+	bool movingRight = false;
+	bool leftPressed = false;
+	bool movingLeft = false;
+	int frameBegun = 0;
+	int firstStartPosition = firstOption.x;
+	int secondStartPosition = secondOption.x;
+	int thirdStartPosition = thirdOption.x;
+	int fourthStartPosition = fourthOption.x;
+	int easeDuration = 30;
+	int easeDistance = windowWidth;
+
 	while (startScreen)	
 	{	
+		frame++;
 		//read input
 		SDL_Event ev;
 		while(SDL_PollEvent(&ev) != 0) 
@@ -858,19 +907,19 @@ int main(int argc, char* argv[])
 			{
 				if (ev.key.keysym.sym == SDLK_1)
 				{
-					playerSelectedSong = 1;
+					//playerSelectedSong = 1;
 				}
 				if (ev.key.keysym.sym == SDLK_2)
 				{
-					playerSelectedSong = 2;
+					//playerSelectedSong = 2;
 				}
 				if (ev.key.keysym.sym == SDLK_3)
 				{
-					playerSelectedSong = 3;
+					//playerSelectedSong = 3;
 				}
 				if (ev.key.keysym.sym == SDLK_4)
 				{
-					playerSelectedSong = 4;
+					//playerSelectedSong = 4;
 				}
 				if (ev.key.keysym.sym == SDLK_SPACE)
 				{
@@ -881,16 +930,86 @@ int main(int argc, char* argv[])
 				{
 					startScreen = false;
 				}
-			}
-			SDL_RenderClear(ren);
-			SDL_RenderCopy(ren, startScreenTex, NULL, &startScreenRect);
-			SDL_RenderPresent(ren);
+				if (ev.key.keysym.sym == SDLK_RIGHT)
+				{
+					if (!(movingLeft || movingRight) && playerSelectedSong < 4)
+					{
+						frameBegun = frame;
+						rightPressed = true;
+					}					
+				}
+				if (ev.key.keysym.sym == SDLK_LEFT)
+				{
+					if (!(movingLeft || movingRight) && playerSelectedSong > 1)
+					{
+						frameBegun = frame;
+						leftPressed = true;
+					}					
+				}
+			}			
 		}
-		if(beginGame)
+
+		if (leftPressed && !(movingLeft || movingRight))
+		{	
+			movingRight = true;
+			leftPressed = false;
+			playerSelectedSong--;
+		}
+		if (movingRight)
 		{
-			playGame();
+			firstOption.x = firstStartPosition + easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			secondOption.x = secondStartPosition + easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			thirdOption.x = thirdStartPosition + easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			fourthOption.x = fourthStartPosition + easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			if (frame-frameBegun == easeDuration)
+			{
+				firstStartPosition = firstOption.x;
+				secondStartPosition = secondOption.x;
+				thirdStartPosition = thirdOption.x;
+				fourthStartPosition = fourthOption.x;
+				movingRight = false;
+			}
 		}
+
+		if (rightPressed && !(movingLeft || movingRight))
+		{	
+			movingLeft = true;
+			rightPressed = false;
+			playerSelectedSong++;
+		}
+		if (movingLeft)
+
+		{
+			firstOption.x = firstStartPosition - easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			secondOption.x = secondStartPosition - easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			thirdOption.x = thirdStartPosition - easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			fourthOption.x = fourthStartPosition - easeInOut(frame-frameBegun, easeDuration, 4)*(easeDistance);
+			if (frame-frameBegun == easeDuration)
+			{
+				firstStartPosition = firstOption.x;
+				secondStartPosition = secondOption.x;
+				thirdStartPosition = thirdOption.x;
+				fourthStartPosition = fourthOption.x;
+				movingLeft = false;
+			}
+
+		}
+
+		SDL_RenderClear(ren);
+		SDL_RenderCopy(ren, startScreenTex, NULL, &startScreenRect);
+
+		SDL_RenderCopy(ren, soulTex, NULL, &firstOption);
+		SDL_RenderCopy(ren, dyingBodyTex, NULL, &secondOption);
+		SDL_RenderCopy(ren, onBeatTex, NULL, &thirdOption);
+		SDL_RenderCopy(ren, feverBarTex, NULL, &fourthOption);
+
+		SDL_RenderPresent(ren);
 	}
+	if(beginGame)
+	{
+		playGame();
+	}
+	
 	
 	close();
 	return 0;
