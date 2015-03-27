@@ -25,7 +25,7 @@ int activeSouls = 50;
 int soulHeight = 30; //30
 int soulWidth = 15;
 double soulSpeed = 0.5;
-double soulSpawnRate = 0.2;
+double soulSpawnRate = 0.4;
 
 struct Soul {double x, y, w, h;  float vx, vy;};
 
@@ -280,9 +280,9 @@ bool readCustomLevel() {
 		for (int j = 0; j < 10; j++)
 		{
 			SDL_GetRGB(getpixel(customLevel, i, j), customLevel->format, &r, &g, &b);
-			if ((int)r == 0)
+			if ((int)r <= 50)
 			{
-				customObstacles[(i*10)+j] = 1;
+				customObstacles[(j*10)+i] = 1;
 			}
 		}
 	}
@@ -488,7 +488,23 @@ int main(int argc, char* argv[]) {
 	bool gunLock = false;
 	int bulletDelay = FRAMERATE / 5;
 
+	bool laserOn = false;
+	bool spacePressed = false;
+	bool laserStock[3] = {1, 1, 1};
+	int laserDuration = FRAMERATE*3;
+	SDL_Rect laserPos = {windowWidth*3/4 - 5, windowHeight/2 - 5, cursorRadius*2 + 10, cursorRadius*2 + 10};
+	SDL_Rect laserCharges[3];
+	for (int i = 0; i < 3; i++)
+	{
+		laserCharges[i].x = windowWidth - (i+2)*wallThickness;
+		laserCharges[i].y = windowHeight-(wallThickness*2/3);
+		laserCharges[i].w = wallThickness;
+		laserCharges[i].h = wallThickness*2/3;
+	}
+
 	int killCount = 0;
+
+	SDL_Rect soulDisplay = {windowWidth/2, windowHeight-(wallThickness*2/3), wallThickness, wallThickness*2/3};
 
 	/*SDL_Rect rightSide;
 		rightSide.x = windowWidth/2;
@@ -500,7 +516,7 @@ int main(int argc, char* argv[]) {
 	SDL_Rect gunHeatBar;
 		gunHeatBar.x = windowWidth - (wallThickness*2/3);
 		gunHeatBar.y =  windowHeight-wallThickness/2;
-		gunHeatBar.w = wallThickness/3;
+		gunHeatBar.w = wallThickness/2;
 		gunHeatBar.h = windowHeight/4;
 	SDL_Rect gunHeatBarFill;
 		gunHeatBarFill.x = gunHeatBar.x;
@@ -527,14 +543,26 @@ int main(int argc, char* argv[]) {
 					case SDLK_ESCAPE:
 						running = false;
 						break;
+					case SDLK_SPACE:
+						spacePressed = true;
+						break;
 					default:
 						break;
 				}
 			}
 			else if (ev.type == SDL_MOUSEMOTION)
 			{
-				mouseMotionX = ev.motion.xrel*2;
-				mouseMotionY = ev.motion.yrel*2;
+				if (!laserOn)
+				{
+					mouseMotionX = ev.motion.xrel*2;
+					mouseMotionY = ev.motion.yrel*2;
+				}
+				else
+				{
+					mouseMotionX = ev.motion.xrel;
+					mouseMotionY = ev.motion.yrel;
+				}
+				
 			}
 			else if(ev.type == SDL_MOUSEBUTTONDOWN)
 			{
@@ -595,6 +623,38 @@ int main(int argc, char* argv[]) {
 			gunLock = false;
 		}
 
+		//laser REMOVE spacepressed=true TO MAKE CONTIUOUS LASER A LA ALL-STAR MODE
+		if (spacePressed && !laserOn && (laserStock[0] || laserStock[1] || laserStock[2]))
+		{
+			spacePressed = false;
+			laserOn = true;
+			/*for (int i = 2; i >= 0; i--)
+			{
+				if (laserStock[i])
+				{
+					laserStock[i] = 0;
+					break;
+				}
+			}*/
+		}
+		if (laserOn)
+		{
+			firingBullets = false;
+			laserDuration--;
+			if (laserDuration <= 0)
+			{
+				for (int i = 2; i >= 0; i--)
+				{
+					if (laserStock[i])
+					{
+						laserStock[i] = 0;
+						break;
+					}
+				}
+				laserOn = false;
+				laserDuration = FRAMERATE*3;
+			}
+		}
 
 
 
@@ -626,11 +686,13 @@ int main(int argc, char* argv[]) {
 		if (!cursorCollidedX)
 		{
 			mousePos.x += mouseMotionX;			
+			laserPos.x += mouseMotionX;
 			mouseMotionX = 0;			
 		}
 		if (!cursorCollidedY)
 		{
 			mousePos.y += mouseMotionY;
+			laserPos.y += mouseMotionY;
 			mouseMotionY = 0;
 		}
 		cursorCollidedX = false, cursorCollidedY = false;
@@ -652,6 +714,17 @@ int main(int argc, char* argv[]) {
 			bool soulDead = false;
 			SDL_Rect testSoul = {souls[i].x, souls[i].y, soulWidth, soulHeight};
 			if (firingBullets && !soulKilledThisFrame && collisionDetectedBoxCircle(testSoul,0,mousePos,cursorRadius))
+			{
+				soulKilledThisFrame = true;
+				cout << i << " ";
+				markedForDestruction = i;
+				cout << markedForDestruction << " ";
+				soulDead = true;
+				killCount++;
+				cout << killCount << endl;
+				cout << souls[i].x << " " << souls[i].y << endl << souls[i].y+souls[i].h << " " << souls[i].x+souls[i].w << endl;
+			}
+			else if (laserOn && !soulKilledThisFrame && collisionDetectedBoxCircle(testSoul, 0, mousePos, cursorRadius + 5))
 			{
 				soulKilledThisFrame = true;
 				cout << i << " ";
@@ -739,11 +812,22 @@ int main(int argc, char* argv[]) {
 		for (int i = souls.size()-1; i >= 0; i--)
 		{
 			SDL_Rect soulRect = {souls[i].x, souls[i].y, souls[i].w, souls[i].h};
-			SDL_RenderCopy(ren, soulTex, NULL, &soulRect);
+			if (souls[i].vx >= 0)
+			{
+				SDL_RenderCopy(ren, soulTex, NULL, &soulRect);
+			}
+			else
+			{
+				SDL_RenderCopyEx(ren,soulTex, NULL, &soulRect, 0, NULL, SDL_FLIP_HORIZONTAL);
+			}
 		}
 
 	
 		//cursor
+		if (laserOn)
+		{
+			SDL_RenderCopyEx(ren, soulTex, NULL, &laserPos, -frame*3, NULL, SDL_FLIP_NONE);
+		}
 		if (!gunLock)
 		{
 			SDL_RenderCopyEx(ren, crosshairTex, NULL, &mousePos, frame, NULL, SDL_FLIP_NONE);
@@ -754,6 +838,7 @@ int main(int argc, char* argv[]) {
 		}
 		//cout <<"x" << mousePos.x << endl;
 
+		//cooldown bar
 		gunHeatBarFill.h = gunHeatBar.h * (gunHeat/(double)5);
 		SDL_RenderCopyEx(ren, gunHeatFrameTex, NULL, &gunHeatBar, 180, &turningPoint, SDL_FLIP_VERTICAL);
 		if (!gunLock)
@@ -764,6 +849,25 @@ int main(int argc, char* argv[]) {
 		{
 			SDL_RenderCopyEx(ren, gunOverheatTex, NULL, &gunHeatBarFill, 180, &turningPoint, SDL_FLIP_VERTICAL);
 		}
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (laserStock[i] && laserOn)
+			{
+				SDL_RenderCopy(ren, gunOverheatTex, NULL, &laserCharges[i]);
+			}
+			else if (laserStock[i] && !laserOn)
+			{
+				SDL_RenderCopy(ren, soulTex, NULL, &laserCharges[i]);
+			}
+			else
+			{
+				SDL_RenderCopy(ren, groundTex, NULL, &laserCharges[i]);
+			}
+		}
+
+		//DISPLAY NUMBER OF SOULS REMAINING using soulDisplay Rect hahahahah #rekt
+
 
 		SDL_RenderPresent(ren);		
 
