@@ -1,9 +1,34 @@
-High Score: 
-84
-By: 
-Azi
+--------------------------HIGH SCORES------------------
  
-Longest Combo: 
+Score 1:
+243
+By: 
+Zarah
+ 
+Score 2:
 37
 By: 
 Azi
+ 
+Score 3:
+15
+By: 
+999
+ 
+-----------------------LONGEST COMBOS---------------------
+ 
+Longest Combo 1: 
+21
+By: 
+yay
+ 
+Longest Combo 2: 
+20
+By: 
+Azi
+ 
+Longest Combo 3: 
+1
+By: 
+Azi
+ 
