@@ -41,7 +41,7 @@ const double scoreBoardHeight = 50;
 const double feverBarWidth = viewPortWidth - scoreBoardWidth;
 const double feverBarHeight = 40;
 const int maxNotes = 500;
-int maxSoulsAllowed = 50;
+int maxSoulsAllowed;
 const int soulDist = dyingBody - soulThreshold; //number of pixels
 //vector where the souls are stored
 SDL_Rect soulNotes[numberOfSouls];
@@ -54,6 +54,8 @@ SDL_Rect startScreenRect = {0, 0, windowWidth, windowHeight};
 SDL_Rect notifiers[numberOfSouls];
 SDL_Rect buttonPress[numberOfSouls];
 SDL_Rect feverBarStatic = {0, windowHeight-40, feverBarWidth, feverBarHeight};
+SDL_Rect highScoreRect = {0, 0, 500, 50};
+int animationCountdown = 0;
 
 //CONSTANTS FOR THE GAME'S MUSIC
 ISoundEngine* engine = createIrrKlangDevice();
@@ -79,6 +81,7 @@ int combo = 0;
 int highestPlayerCombo = 0;
 int playerScore;
 int minimumFever;
+int killCount = 0;
 bool playerStrum1 = false;
 bool playerStrum2 = false;
 bool playerStrum3 = false;
@@ -192,7 +195,8 @@ SDL_Texture *songSelectFourTex = NULL;
 SDL_Texture *laserActiveTex = NULL;
 SDL_Texture *laserStockReadyTex = NULL;
 SDL_Texture *laserStockNotReadyTex = NULL;
-
+SDL_Texture *soulBeatTex = NULL;
+SDL_Texture *highScoreTex = NULL;
 
 SDL_Rect noPress = {0, 0, 200, 80};
 SDL_Rect rightPress = {0, 80, 200, 80};
@@ -200,7 +204,6 @@ SDL_Rect wrongPress = {0, 160, 200, 80};
 SDL_Rect firstWhacker = {0, 0, windowWidth/6, soulNoteHeight};
 SDL_Rect secondWhacker = {windowWidth/6, 0, windowWidth/6, soulNoteHeight};
 SDL_Rect thirdWhacker = {windowWidth/3, 0, windowWidth/6, soulNoteHeight};
-
 
 SDL_Texture *loadTexture(string path)
 {
@@ -493,6 +496,13 @@ bool loadMedia()
 		success=false;
 	}
 
+	soulBeatTex = loadTexture("soul-beat.png");
+	if (soulBeatTex == NULL)
+	{
+		printf("failed to load texture!\n");
+		success=false;
+	}
+
     return success;
 }
 
@@ -667,34 +677,44 @@ void initializeButtonPress()
 //----------------------------------------------------------RENDER BUTTON PRESS-----------------------------------------------------------
 void checkAndRenderButtonPress(int situation)
 {
+	if (animationCountdown == 0)
+	{
+		animationCountdown = 10;
+	}
 	if(situation == 1)
 	{
-		if (playerStrum1 == true)
+		if (playerStrum1 == true && animationCountdown > 0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &rightPress, &buttonPress[0]);
+			animationCountdown--;
 		}
-		if (playerStrum2 == true)
+		if (playerStrum2 == true&&animationCountdown>0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &rightPress, &buttonPress[1]);
+			animationCountdown--;
 		}
-		if (playerStrum3 == true)
+		if (playerStrum3 == true&&animationCountdown>0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &rightPress, &buttonPress[2]);
+			animationCountdown--;
 		}
 	}
 	else if (situation == 2)
 	{
-		if (playerStrum1 == true)
+		if (playerStrum1 == true&&animationCountdown>0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &wrongPress, &buttonPress[0]);
+			animationCountdown--;
 		}
-		if (playerStrum2 == true)
+		if (playerStrum2 == true&&animationCountdown>0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &wrongPress, &buttonPress[1]);
+			animationCountdown--;
 		}
-		if (playerStrum3 == true)
+		if (playerStrum3 == true&&animationCountdown>0)
 		{
 			SDL_RenderCopy(ren, buttonPressTex, &wrongPress, &buttonPress[2]);
+			animationCountdown--;
 		}
 	}
 }
@@ -724,13 +744,26 @@ void renderSoulFloating(int startingIndex)//, int floatingSouls)
 	}
 	if (!alreadyHit)
 	{
-		SDL_RenderCopy(ren, soulTex, NULL, &soulNotes[startingIndex]);
+		//checkAndRenderButtonPress();
+		int playhead = songTime;
+		int crotchetInt = msCrotchet;
+		if(playhead%crotchetInt == 0)
+		{
+			SDL_RenderCopy(ren, soulBeatTex, NULL, &soulNotes[startingIndex]);
+		}
+		else
+		{
+			SDL_RenderCopy(ren, soulTex, NULL, &soulNotes[startingIndex]);
+		}
+		//SDL_RenderCopy(ren, soulTex, NULL, &soulNotes[startingIndex]);
 		//checkAndRenderButtonPress();
 	}
-	else
-	{
-
-	}
+}
+//--------------------------------------------------DISPLAY HIGH SCORE-----------------------------------------
+void displayHighScore(string highScoreParsed)
+{
+	highScoreTex = renderTEXTure(highScoreParsed, white);
+	SDL_RenderCopy(ren, highScoreTex, NULL, &highScoreRect);
 }
 //----------------------------------------------SCORE TRACKING-----------------------------------------------
 void scoringCheck(int soulIndex)
@@ -888,15 +921,18 @@ void setDifficulty(string diffSetting)
 	{
 		minimumFever = 20;
 		bpm = bpm/4;
+		maxSoulsAllowed = 60;
 	}
 	else if (diffSetting == "Normal")
 	{
 		minimumFever = 40;
 		bpm =bpm/2;
+		maxSoulsAllowed = 50;
 	}
 	else if (diffSetting == "Hard")
 	{
-		minimumFever = 80;
+		minimumFever = 60;
+		maxSoulsAllowed = 40;
 	}
 }
 //------------------------------------------------------------------SONG SELECT----------------------------------------------------------------------------
@@ -1142,6 +1178,62 @@ Soul spawnNewSoul() {
 	}
 	return soul;
 }
+void afterGameScoring()
+{
+	if(souls.size() <= maxSoulsAllowed)
+				{
+					cout << "Your final score = " << timesHit << "(Deaths Delayed) + " << killCount << "(Souls Obliterated) =" << timesHit +killCount << endl;
+					//high score
+					if (timesHit+killCount>highestScores[0])
+					{
+						highestScores[2] = highestScores[1];
+						highestScores[1] = highestScores[0];
+						highestScores[0] = timesHit+killCount;
+						cout << "Congratulations! High score! Enter your name (No spaces please):";
+						cin >> bestPlayers[0];
+					}
+					else if(timesHit+killCount>highestScores[1])
+					{
+						highestScores[2] = highestScores[1];
+						highestScores[1] = timesHit+killCount;
+						cout << "Congratulations! High score! Enter your name (No spaces please):";
+						cin >> bestPlayers[1];
+					}
+					else if(timesHit+killCount>highestScores[2])
+					{
+						highestScores[2] = timesHit+killCount;
+						cout << "Congratulations! High score! Enter your name (No spaces please):";
+						cin >> bestPlayers[2];
+					}
+					//longest combo score tracking
+
+					if (highestPlayerCombo>longestCombos[0])
+					{
+						longestCombos[2] = longestCombos[1];
+						longestCombos[1] = longestCombos[0];
+						longestCombos[0] = highestPlayerCombo;
+						cout << "Congratulations! Longest Streak! Enter your name (No spaces please):";
+						cin >> bestComboPlayers[0];
+					}
+					else if(highestPlayerCombo>longestCombos[1])
+					{
+						longestCombos[2] = longestCombos[1];
+						longestCombos[1] = highestPlayerCombo;
+						cout << "Congratulations! Longest Streak! Enter your name (No spaces please):";
+						cin >> bestComboPlayers[1];
+					}
+					else if(highestPlayerCombo>longestCombos[2])
+					{
+						longestCombos[2] = highestPlayerCombo;
+						cout << "Congratulations! Longest Streak! Enter your name (No spaces please):";
+						cin >> bestComboPlayers[2];
+					}
+				}
+				else
+				{
+					cout << "You failed." << endl;
+				}
+}
 
 //-------------------------------------------MAIN LOOP-----------------------------
 void playGame()
@@ -1216,8 +1308,6 @@ void playGame()
 		laserCharges[i].w = wallThickness;
 		laserCharges[i].h = wallThickness*2/3;
 	}
-
-	int killCount = 0;
 
 	SDL_Rect soulDisplay = {windowWidth/2, windowHeight-(wallThickness*2/3), wallThickness, wallThickness*2/3};
 
@@ -1312,7 +1402,7 @@ void playGame()
 			songTime = (songTime + currentPlayheadPosition)/2;
 			lastReportedPlayheadPosition = currentPlayheadPosition;
 		}
-		//CITE THE SOURCE OF THIS ALGORITHM HERE LATER ON OKAY
+		//from http://www.reddit.com/r/gamedev/comments/13y26t/how_do_rhythm_games_stay_in_sync_with_the_music/
 
 		//if gun can shoot
 		if (mouseButtonDown && bulletDelay == 0 && !gunLock)
@@ -1386,8 +1476,6 @@ void playGame()
 				laserDuration = FRAMERATE*3;
 			}
 		}
-
-
 
 		//MOUSE BLOCK
 		SDL_Rect projectedMousePositionX = {mousePos.x+mouseMotionX, mousePos.y, cursorRadius*2, cursorRadius*2};
@@ -1650,34 +1738,7 @@ void playGame()
 			{
 				soulNotes[soulSequence[sequenceID]].y = dyingBody;
 				renderSoulFloating(soulSequence[sequenceID]);
-				if(souls.size() <= maxSoulsAllowed)
-				{
-					cout << "Your final score = " << timesHit << "(Deaths Delayed) + " << killCount << "(Souls Obliterated) =" << timesHit +killCount << endl;
-					for(int i = 0; i < 3; i++)
-					{
-						if(timesHit+killCount > stoi(savedHighScore[3+i*5]))
-						{
-							highestScores[i] = timesHit+killCount;
-							cout << "Congratulations! High score! Enter your name (No spaces please):";
-							cin >> bestPlayers[i];
-							break;
-						}
-					}
-					for(int i = 0; i<3;i++)
-					{
-						if(highestPlayerCombo > stoi(savedHighScore[20+i*5]))
-						{
-							longestCombos[i] = highestPlayerCombo;
-							cout << "Congratulations! Longest Streak! Enter your name (No spaces please):";
-							cin >> bestComboPlayers[i];
-							break;
-						}
-					}
-				}
-				else
-				{
-					cout << "You failed." << endl;
-				}
+				afterGameScoring();
 				ofstream myfile;
 				myfile.open ("highScore.txt");
 				myfile << "--------------------------HIGH SCORES------------------" << endl;
@@ -1807,7 +1868,14 @@ void playGame()
 	SDL_FreeSurface( text_surface );*/
 		stringstream target;
 		target << souls.size();
-		soulsToKill = renderTEXTure(target.str(), white);
+		if(souls.size()<maxSoulsAllowed)
+		{
+			soulsToKill = renderTEXTure(target.str(), white);
+		}
+		else
+		{
+			soulsToKill = renderTEXTure(target.str(), red);
+		}
 		SDL_RenderCopy(ren, soulsToKill, NULL, &soulDisplay);
 
 		SDL_RenderPresent(ren);
@@ -1884,6 +1952,14 @@ int main(int argc, char* argv[])
 		frame++;
 		//read input
 		SDL_Event ev;
+		loadFile("highScore.txt", savedHighScore);
+		for(int i = 0; i < 3; i++)
+		{
+			highestScores[i] = stoi(savedHighScore[3+i*5]);
+			bestPlayers[i] = savedHighScore[5+i*5];
+			longestCombos[i] = stoi(savedHighScore[20+i*5]);
+			bestComboPlayers[i] = savedHighScore[22+i*5];
+		}
 		while(SDL_PollEvent(&ev) != 0) 
 		{
 			if(ev.type == SDL_QUIT) 
@@ -1984,6 +2060,9 @@ int main(int argc, char* argv[])
 
 		SDL_RenderClear(ren);
 		SDL_RenderCopy(ren, startScreenTex, NULL, &startScreenRect);
+		stringstream strm;
+		strm << "Highest Score: "<< highestScores[0] << " by: " << bestPlayers[0];
+		displayHighScore(strm.str());
 
 		SDL_RenderCopy(ren, songSelectOneTex, NULL, &firstOption);
 		SDL_RenderCopy(ren, songSelectTwoTex, NULL, &secondOption);
